@@ -1,0 +1,10 @@
+# Direct dependencies (conversion is fully offline; no APIs).
+pypdf==6.15.0
+fonttools==4.63.0
+python-docx==1.2.0
+pypdfium2==5.13.0
+pillow==12.3.0
+
+# Transitive dependencies, pinned for offline install from vendor/wheels.
+lxml==6.1.1
+typing_extensions==4.16.0

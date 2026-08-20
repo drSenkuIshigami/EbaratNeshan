@@ -1,0 +1,27 @@
+# Generated conversion output
+output/
+_uploads/
+
+# Local scratch from development / debugging
+_fonts/
+_glyph_imgs/
+_tmp_fa_assets/
+Extracted pages from_assets/
+
+# Unpacked runtime libs (created by install.bat / pip -t vendor/libs)
+vendor/libs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.env
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*.log
