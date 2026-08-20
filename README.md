@@ -435,3 +435,17 @@ Planned next steps:
 If a real file comes out wrong, open a GitHub issue with **page number**, **expected text**, **actual text**, and **PDF vs DOCX**. Do not upload confidential documents. Pull requests that improve recovery, tables, or docs are welcome; keep samples tiny and free of personal data.
 
 License: [MIT](LICENSE).
+
+---
+
+<div align="center">
+
+<br/>
+
+**10,000,000,000%**
+
+### Ten billion percent: every impossible system is just an unsolved problem.
+
+<sub>Senku Ishigami · <a href="https://github.com/drSenkuIshigami">drSenkuIshigami</a></sub>
+
+</div>
