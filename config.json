@@ -1,0 +1,15 @@
+{
+  "input": "",
+  "input_root": "input",
+  "output_root": "output",
+  "output_llm": "llm",
+  "output_reading": "reading",
+  "purpose": "all",
+  "title": null,
+  "report": true,
+  "overwrite": false,
+  "table_images": true,
+  "figure_images": true,
+  "persian_digits": false,
+  "split_llm": false
+}
