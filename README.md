@@ -55,12 +55,49 @@ No programming is required. A simple page runs on **your computer only**. Drag o
 
 EbaratNeshan is designed to preserve **logical Unicode** and reading order as accurately as possible. It is especially careful with difficult **Persian/Arabic Word-generated PDFs**. Complex, scanned, damaged, or unusual PDFs can still need a human look. Conversion is not perfect for every file.
 
+**GitHub description** (paste when you publish):
+
+> Offline PDF & Word → Markdown. Recovers real Persian/Arabic letters from broken Word PDFs. RTL, LTR, mixed pages. LLM-ready. Files never leave your computer.
+
+**GitHub topics:** `pdf` `markdown` `persian` `arabic` `rtl` `llm` `rag` `offline` `docx` `ocr-alternative`
+
+<p align="center">
+  <img src="docs/local-page.jpg" alt="EbaratNeshan local page: drop PDF or DOCX, choose LLM or reading, convert on this computer" width="720">
+</p>
+
+<p align="center"><em>Local page at <code>http://127.0.0.1:8765/</code> — drag files or a folder, click Convert. Nothing is uploaded.</em></p>
+
+---
+
+## Before and after
+
+Ordinary copy or extract from some old Iranian Word PDFs looks correct on screen but produces the wrong letters:
+
+```text
+پااغ اص تؼشیااف فایاال اماالام دادُ …
+```
+
+EbaratNeshan rebuilds **logical Unicode** from the embedded font:
+
+```text
+پس از تعریف فایل اقلام داده‌ای …
+```
+
+A bilingual test file with no personal data is in [`examples/sample-fa-en.docx`](examples/sample-fa-en.docx). Converted Markdown: [`examples/sample-fa-en.md`](examples/sample-fa-en.md).
+
+<div dir="rtl" align="right">
+
+کپی معمولی از بعضی PDFهای قدیمی ورد ایرانی حروف غلط می‌دهد. EbaratNeshan حروف منطقی را برمی‌گرداند. نمونهٔ بدون دادهٔ شخصی: پوشهٔ `examples/`.
+
+</div>
+
 ---
 
 ## Contents
 
 - [Why Markdown matters](#why-markdown-matters)
 - [Why Persian and Arabic PDFs break](#why-persian-and-arabic-pdfs-break)
+- [Before and after](#before-and-after)
 - [Easy start](#easy-start)
 - [Install Python and requirements](#install-python-and-requirements)
 - [What it can do](#what-it-can-do)
@@ -395,6 +432,6 @@ Planned next steps:
 - OCR fallback when fonts have no usable names
 - Ongoing accuracy work for RTL, LTR, mixed scripts, tables, and layout
 
-If a real file comes out wrong, an issue with **page number**, **expected text**, **actual text**, and **PDF vs DOCX** helps more than a screenshot alone. Please do not upload confidential documents.
+If a real file comes out wrong, open a GitHub issue with **page number**, **expected text**, **actual text**, and **PDF vs DOCX**. Do not upload confidential documents. Pull requests that improve recovery, tables, or docs are welcome; keep samples tiny and free of personal data.
 
 License: [MIT](LICENSE).
