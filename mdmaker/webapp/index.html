@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EbaratNeshan</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a222c;
+      --line: #2d3a48;
+      --text: #e8eef4;
+      --muted: #93a4b5;
+      --accent: #3d9cf0;
+      --accent-dim: #1e4f7a;
+      --ok: #3ecf8e;
+      --bad: #e85d5d;
+      --drop: #243040;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Tahoma, "Noto Naskh Arabic", "Arial", sans-serif;
+      background: radial-gradient(1200px 600px at 80% -10%, #1a3a55 0%, var(--bg) 55%);
+      color: var(--text);
+    }
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 2.2rem 1.2rem 3rem;
+    }
+    h1 {
+      margin: 0 0 0.25rem;
+      font-size: 1.7rem;
+      font-weight: 650;
+    }
+    .sub {
+      color: var(--muted);
+      margin: 0 0 1.6rem;
+      line-height: 1.55;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1.1rem 1.15rem;
+      margin-bottom: 1rem;
+    }
+    #drop {
+      border: 1.5px dashed #4a6278;
+      background: var(--drop);
+      border-radius: 12px;
+      padding: 1.6rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    #drop.over, #drop:hover {
+      border-color: var(--accent);
+      background: #1d3348;
+    }
+    #drop strong { display: block; font-size: 1.05rem; margin-bottom: 0.35rem; }
+    #drop span { color: var(--muted); font-size: 0.92rem; }
+    #filename { margin-top: 0.7rem; color: var(--ok); min-height: 1.2rem; }
+    #filelist {
+      margin: 0.55rem 0 0;
+      padding: 0;
+      max-height: 9rem;
+      overflow: auto;
+      text-align: start;
+      font-size: 0.86rem;
+      color: var(--ok);
+    }
+    #filelist li { list-style: none; padding: 0.12rem 0; word-break: break-all; }
+    label.opt {
+      display: flex;
+      gap: 0.7rem;
+      align-items: flex-start;
+      padding: 0.55rem 0.4rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    label.opt:hover { background: #223040; }
+    label.opt input { margin-top: 0.28rem; accent-color: var(--accent); }
+    label.opt small { display: block; color: var(--muted); }
+    .row {
+      display: flex;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    button {
+      font: inherit;
+      border: 0;
+      border-radius: 10px;
+      padding: 0.7rem 1.15rem;
+      cursor: pointer;
+    }
+    #go {
+      background: var(--accent);
+      color: #061018;
+      font-weight: 700;
+      min-width: 10rem;
+    }
+    #go:disabled { opacity: 0.45; cursor: not-allowed; }
+    .ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+    details { margin-top: 0.4rem; color: var(--muted); }
+    details summary { cursor: pointer; margin-bottom: 0.4rem; }
+    #status { min-height: 1.4rem; margin: 0.4rem 0 0; }
+    #status.err { color: var(--bad); }
+    #status.ok { color: var(--ok); }
+    .outputs { display: grid; gap: 0.8rem; }
+    .out h3 { margin: 0 0 0.45rem; font-size: 1rem; }
+    .path { color: var(--muted); font-size: 0.82rem; word-break: break-all; margin-bottom: 0.5rem; }
+    pre {
+      margin: 0.6rem 0 0;
+      max-height: 280px;
+      overflow: auto;
+      background: #101820;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.7rem;
+      font-size: 0.78rem;
+      white-space: pre-wrap;
+      direction: rtl;
+    }
+    .warn { color: #e0c36a; font-size: 0.9rem; }
+    p.err { color: var(--bad); margin: 0.4rem 0 0; }
+    .en { direction: ltr; unicode-bidi: isolate; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>EbaratNeshan <span style="font-weight:500;color:var(--muted)">عبارت‌نشان</span></h1>
+    <p class="sub">
+      سند را به Markdown تبدیل کنید — روی همین رایانه، بدون اینترنت.
+      <span class="en">Drop files or a folder. Stays on this computer.</span>
+    </p>
+
+    <div class="card">
+      <div id="drop">
+        <strong>فایل‌ها یا پوشه را اینجا بکشید</strong>
+        <span class="en">Drop PDF / DOCX files or a folder, or use the buttons below</span>
+        <div id="filename"></div>
+        <ul id="filelist"></ul>
+      </div>
+      <input id="file" type="file" multiple accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+      <input id="folder" type="file" webkitdirectory directory hidden>
+      <div class="row">
+        <button id="pick-files" class="ghost" type="button">انتخاب فایل‌ها / Choose files</button>
+        <button id="pick-folder" class="ghost" type="button">انتخاب پوشه / Choose folder</button>
+        <button id="clear" class="ghost" type="button">پاک کردن / Clear</button>
+      </div>
+
+      <p style="margin:1rem 0 0.3rem">خروجی / <span class="en">Purpose</span></p>
+      <label class="opt"><input type="radio" name="purpose" value="llm" checked>
+        <span>LLM — برای مدل زبانی<br><small class="en">Headings, lists, compact Markdown for models</small></span>
+      </label>
+      <label class="opt"><input type="radio" name="purpose" value="reading">
+        <span>خواندن — برای انسان<br><small class="en">Reading copy with the same recovered Persian text</small></span>
+      </label>
+      <label class="opt"><input type="radio" name="purpose" value="all">
+        <span>هر دو / <span class="en">Both</span></span>
+      </label>
+
+      <details>
+        <summary>گزینه‌های بیشتر / <span class="en">Advanced</span></summary>
+        <label class="opt"><input type="checkbox" id="table_images" checked> تصویر جدول / <span class="en">table screenshots</span></label>
+        <label class="opt"><input type="checkbox" id="figure_images" checked> تصویر شکل / <span class="en">figure screenshots</span></label>
+        <label class="opt"><input type="checkbox" id="overwrite"> بازنویسی پوشه / <span class="en">overwrite existing folder</span></label>
+        <label class="opt"><input type="checkbox" id="persian_digits"> ارقام فارسی / <span class="en">Persian digits 1→۱</span></label>
+        <label class="opt"><input type="checkbox" id="split_llm"> تقسیم LLM به بخش‌ها / <span class="en">split LLM by H1</span></label>
+      </details>
+
+      <div class="row">
+        <button id="go" type="button" disabled>تبدیل / Convert</button>
+      </div>
+      <p id="status"></p>
+    </div>
+
+    <div id="result"></div>
+  </main>
+  <script>
+    const drop = document.getElementById("drop");
+    const fileInput = document.getElementById("file");
+    const folderInput = document.getElementById("folder");
+    const go = document.getElementById("go");
+    const filenameEl = document.getElementById("filename");
+    const fileListEl = document.getElementById("filelist");
+    const statusEl = document.getElementById("status");
+    const resultEl = document.getElementById("result");
+    let chosen = [];
+
+    function isDoc(file) {
+      const name = (file.name || "").toLowerCase();
+      return name.endsWith(".pdf") || name.endsWith(".docx");
+    }
+
+    function fileKey(file) {
+      return [file.webkitRelativePath || "", file.name, file.size, file.lastModified].join("|");
+    }
+
+    function setFiles(files, skipped) {
+      const docs = [];
+      const seen = new Set();
+      for (const file of files) {
+        if (!isDoc(file)) continue;
+        const key = fileKey(file);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        docs.push(file);
+      }
+      docs.sort((a, b) => label(a).localeCompare(label(b), "fa"));
+      chosen = docs;
+      fileListEl.innerHTML = "";
+      if (!docs.length) {
+        filenameEl.textContent = "";
+        go.disabled = true;
+        setStatus(
+          skipped
+            ? "در این پوشه PDF یا DOCX نبود. / No PDF or DOCX in that folder."
+            : "فقط PDF و DOCX. / Only PDF and DOCX.",
+          true
+        );
+        return;
+      }
+      filenameEl.textContent = docs.length === 1
+        ? docs[0].name
+        : `${docs.length} files`;
+      const shown = docs.slice(0, 12);
+      shown.forEach((file) => {
+        const li = document.createElement("li");
+        li.textContent = label(file);
+        fileListEl.appendChild(li);
+      });
+      if (docs.length > shown.length) {
+        const li = document.createElement("li");
+        li.textContent = `… +${docs.length - shown.length}`;
+        fileListEl.appendChild(li);
+      }
+      go.disabled = false;
+      const extra = skipped ? `  ·  skipped ${skipped} other` : "";
+      setStatus(docs.length === 1 ? "" : `${docs.length} PDF/DOCX${extra}`);
+    }
+
+    function label(file) {
+      return file.webkitRelativePath || file.name;
+    }
+
+    function setStatus(text, err) {
+      statusEl.textContent = text;
+      statusEl.className = err ? "err" : (text ? "ok" : "");
+    }
+
+    function fromFileList(list) {
+      const files = [...list];
+      const skipped = files.filter((f) => !isDoc(f)).length;
+      setFiles(files, skipped);
+    }
+
+    async function collectEntry(entry, out) {
+      if (!entry) return;
+      if (entry.isFile) {
+        const file = await new Promise((resolve, reject) => entry.file(resolve, reject));
+        out.push(file);
+        return;
+      }
+      if (!entry.isDirectory) return;
+      const reader = entry.createReader();
+      const readBatch = () => new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+      while (true) {
+        const batch = await readBatch();
+        if (!batch.length) break;
+        for (const child of batch) await collectEntry(child, out);
+      }
+    }
+
+    drop.addEventListener("click", (e) => {
+      if (e.target.closest("button")) return;
+      fileInput.click();
+    });
+    document.getElementById("pick-files").addEventListener("click", () => fileInput.click());
+    document.getElementById("pick-folder").addEventListener("click", () => folderInput.click());
+    document.getElementById("clear").addEventListener("click", () => {
+      chosen = [];
+      fileInput.value = "";
+      folderInput.value = "";
+      filenameEl.textContent = "";
+      fileListEl.innerHTML = "";
+      go.disabled = true;
+      setStatus("");
+    });
+    drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+    drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+    drop.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      drop.classList.remove("over");
+      const collected = [];
+      const items = [...(e.dataTransfer.items || [])];
+      if (items.some((item) => item.webkitGetAsEntry && item.webkitGetAsEntry())) {
+        for (const item of items) {
+          await collectEntry(item.webkitGetAsEntry(), collected);
+        }
+      }
+      if (!collected.length) collected.push(...e.dataTransfer.files);
+      const skipped = collected.filter((f) => !isDoc(f)).length;
+      setFiles(collected, skipped);
+    });
+    fileInput.addEventListener("change", () => fromFileList(fileInput.files));
+    folderInput.addEventListener("change", () => fromFileList(folderInput.files));
+
+    go.addEventListener("click", async () => {
+      if (!chosen.length) return;
+      go.disabled = true;
+      resultEl.innerHTML = "";
+      const total = chosen.length;
+      let okCount = 0;
+      let failCount = 0;
+      for (let i = 0; i < total; i++) {
+        const file = chosen[i];
+        setStatus(`در حال تبدیل ${i + 1} از ${total} / Converting ${i + 1} of ${total}: ${file.name}`);
+        const data = new FormData();
+        data.append("file", file, file.name);
+        data.append("purpose", document.querySelector("input[name=purpose]:checked").value);
+        data.append("table_images", document.getElementById("table_images").checked);
+        data.append("figure_images", document.getElementById("figure_images").checked);
+        data.append("overwrite", document.getElementById("overwrite").checked);
+        data.append("persian_digits", document.getElementById("persian_digits").checked);
+        data.append("split_llm", document.getElementById("split_llm").checked);
+        const heading = document.createElement("div");
+        heading.className = "card";
+        const h = document.createElement("h3");
+        h.textContent = `${i + 1}/${total}  ${label(file)}`;
+        heading.appendChild(h);
+        resultEl.appendChild(heading);
+        try {
+          const res = await fetch("/api/convert", { method: "POST", body: data });
+          const json = await res.json();
+          if (!json.ok) {
+            failCount += 1;
+            const err = document.createElement("p");
+            err.className = "err";
+            err.textContent = json.error || "Conversion failed.";
+            heading.appendChild(err);
+            continue;
+          }
+          okCount += 1;
+          renderResult(json, heading);
+        } catch (err) {
+          failCount += 1;
+          const msg = document.createElement("p");
+          msg.className = "err";
+          msg.textContent = "Server error: " + err;
+          heading.appendChild(msg);
+        }
+      }
+      if (failCount && okCount) {
+        setStatus(`تمام شد: ${okCount} ok, ${failCount} failed.`, true);
+      } else if (failCount) {
+        setStatus("Conversion failed.", true);
+      } else {
+        setStatus("تمام شد. فایل‌ها در پوشه output ذخیره شدند.");
+      }
+      go.disabled = false;
+    });
+
+    function renderResult(json, parent) {
+      const wrap = document.createElement("div");
+      wrap.className = "outputs";
+      if (json.warnings && json.warnings.length) {
+        const w = document.createElement("div");
+        w.className = "warn";
+        w.textContent = json.warnings.join("\n");
+        wrap.appendChild(w);
+      }
+      (json.outputs || []).forEach((out) => {
+        const card = document.createElement("div");
+        card.className = "out";
+        const title = document.createElement("h3");
+        title.textContent = out.purpose === "llm" ? "LLM Markdown" : "Reading Markdown";
+        const path = document.createElement("div");
+        path.className = "path";
+        path.textContent = out.path;
+        const row = document.createElement("div");
+        row.className = "row";
+        const dl = document.createElement("button");
+        dl.className = "ghost";
+        dl.type = "button";
+        dl.textContent = "دانلود .md / Download";
+        dl.addEventListener("click", () => downloadMd(out.path, out.markdown));
+        const openBtn = document.createElement("button");
+        openBtn.className = "ghost";
+        openBtn.type = "button";
+        openBtn.textContent = "باز کردن پوشه / Open folder";
+        openBtn.addEventListener("click", () => openFolder(out.folder));
+        row.append(dl, openBtn);
+        const pre = document.createElement("pre");
+        pre.textContent = out.markdown || "";
+        card.append(title, path, row, pre);
+        wrap.appendChild(card);
+      });
+      parent.appendChild(wrap);
+    }
+
+    function downloadMd(path, text) {
+      const name = (path.split(/[/\\]/).pop()) || "document.md";
+      const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    async function openFolder(folder) {
+      await fetch("/api/open-folder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder })
+      });
+    }
+  </script>
+</body>
+</html>
