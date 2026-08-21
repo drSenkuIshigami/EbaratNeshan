@@ -1,8 +1,8 @@
 # EbaratNeshan
 
-**عبارت‌نشان** — local **PDF & Word → Markdown**. Persian and Arabic keep real letters and a sensible reading order. English and other left-to-right languages become structured text for search, archives, and LLMs.
+**عبارت‌نشان** — local **PDF & Word → Markdown**, and **Markdown → HTML / Word / PDF / TXT**. Persian and Arabic keep real letters and a sensible reading order. English and other left-to-right languages become structured text for search, archives, and LLMs.
 
-No programming is required. A simple page runs on **your computer only**. Drag one file, several files, or a folder, then click Convert.
+No programming is required. A simple page runs on **your computer only**. Two tabs: **To MD** (drop PDF/DOCX) and **From MD** (drop `.md`, pick one or more export formats).
 
 ---
 
@@ -37,6 +37,7 @@ No programming is required. A simple page runs on **your computer only**. Drag o
 - No advanced technical knowledge
 - Local GUI: double-click `web.bat` (Windows) or run `python3 run_web.py`
 - Drag and drop **one file, many files, or a folder**
+- **From MD:** export Markdown to HTML, Word `.docx`, PDF, or TXT into `output/html`, `output/docx`, …
 - Documents **stay on this computer** — conversion does not upload them
 - Useful for LLMs, RAG, search, archiving, reading, and sharing
 
@@ -46,6 +47,7 @@ No programming is required. A simple page runs on **your computer only**. Drag o
 - نیازی به دانش فنی پیشرفته نیست
 - صفحهٔ سادهٔ محلی: `web.bat` یا `python3 run_web.py`
 - یک فایل، چند فایل، یا یک **پوشه** را بکشید و رها کنید
+- **از Markdown:** خروجی HTML، ورد `.docx`، PDF یا TXT در پوشه‌های `output/`
 - سندها **روی رایانهٔ خودتان** می‌مانند و آپلود نمی‌شوند
 - مناسب مدل زبانی، RAG، جست‌وجو، بایگانی، خواندن و اشتراک
 
@@ -57,7 +59,7 @@ EbaratNeshan is designed to preserve **logical Unicode** and reading order as ac
 
 **GitHub description** (paste when you publish):
 
-> Offline PDF & Word → Markdown. Recovers real Persian/Arabic letters from broken Word PDFs. RTL, LTR, mixed pages. LLM-ready. Files never leave your computer.
+> Offline PDF & Word → Markdown, then Markdown → HTML / Word / PDF. Recovers real Persian/Arabic letters from broken Word PDFs. RTL, LTR, mixed pages. LLM-ready. Files never leave your computer.
 
 **GitHub topics:** `pdf` `markdown` `persian` `arabic` `rtl` `llm` `rag` `offline` `docx` `ocr-alternative`
 
@@ -65,7 +67,7 @@ EbaratNeshan is designed to preserve **logical Unicode** and reading order as ac
   <img src="docs/local-page.jpg" alt="EbaratNeshan local page: drop PDF or DOCX, choose LLM or reading, convert on this computer" width="720">
 </p>
 
-<p align="center"><em>Local page at <code>http://127.0.0.1:8765/</code> — drag files or a folder, click Convert. Nothing is uploaded.</em></p>
+<p align="center"><em>Local page at <code>http://127.0.0.1:8765/</code> — two tabs: To MD (PDF/DOCX) and From MD (export). Screenshot shows the To MD tab. Nothing is uploaded.</em></p>
 
 ---
 
@@ -101,6 +103,7 @@ A bilingual test file with no personal data is in [`examples/sample-fa-en.docx`]
 - [Easy start](#easy-start)
 - [Install Python and requirements](#install-python-and-requirements)
 - [What it can do](#what-it-can-do)
+- [From Markdown](#from-markdown)
 - [Settings (`config.json`)](#settings-configjson)
 - [Output folders](#output-folders)
 - [Tables and figures](#tables-and-figures)
@@ -170,8 +173,9 @@ You do not need to write code. **Python** is only the small engine that runs Eba
 2. Double-click **`install.bat`** once. It looks for Python 3.11+, installs Python 3.13 with `winget` if needed, then puts packages into `vendor/libs`.
 3. Double-click **`web.bat`**. Leave the black terminal window **open**.
 4. A page should open at `http://127.0.0.1:8765/`.
-5. Drop a PDF or DOCX — or several files — or a **folder**. Choose LLM, reading, or both. Click **Convert**.
-6. Results are written under `output/` (folders still follow `config.json`).
+5. **To MD:** drop a PDF or DOCX — or several files — or a **folder**. Choose LLM, reading, or both. Click **Convert**.
+6. **From MD:** drop `.md` files, tick HTML / Word `.docx` / PDF / TXT (several at once is fine), click **Export**. Files go into `output/html`, `output/docx`, `output/pdf`, `output/txt`.
+7. Converted Markdown from To MD is under `output/llm` and/or `output/reading` (paths still follow `config.json`).
 
 `127.0.0.1` means **this computer**, not a public website. Conversion does not send your documents to a remote server. Files you drop are copied into `_uploads/` first; the Markdown you keep is under `output/`.
 
@@ -195,7 +199,7 @@ Install Python 3.11+ first if `python3` is missing (`brew install python` on mac
 
 ### شروع آسان
 
-نیازی به برنامه‌نویسی نیست. روی ویندوز یک‌بار `install.bat` و بعد `web.bat` را دوبار کلیک کنید. پنجرهٔ ترمینال را باز بگذارید. صفحه روی **همین رایانه** باز می‌شود (`127.0.0.1`). فایل یا پوشه را بکشید، Convert را بزنید، نتیجه در `output/` است. سندها به اینترنت فرستاده نمی‌شوند.
+نیازی به برنامه‌نویسی نیست. روی ویندوز یک‌بار `install.bat` و بعد `web.bat` را دوبار کلیک کنید. پنجرهٔ ترمینال را باز بگذارید. صفحه روی **همین رایانه** باز می‌شود (`127.0.0.1`). تب **به Markdown** برای PDF/DOCX است؛ تب **از Markdown** فایل `.md` را به HTML، ورد، PDF یا TXT می‌برد. نتیجه در `output/` است. سندها به اینترنت فرستاده نمی‌شوند.
 
 در مک و لینوکس از `install.sh` و `python3 run_web.py` استفاده کنید؛ فایل `.bat` اجرا نمی‌شود.
 
@@ -281,9 +285,9 @@ Pinned libraries today: `pypdf`, `fonttools`, `python-docx`, `pypdfium2`, `pillo
 
 ## What it can do
 
-- Input: **PDF** and modern **DOCX** (old `.doc` is not supported yet)
+- Input: **PDF** and modern **DOCX** (old `.doc` is not supported)
 - One file, several files, or a whole folder (non-PDF/DOCX files in a folder are skipped)
-- Local drag-and-drop page; optional `config.json` + `convert.bat` / `run.py`
+- Local two-tab page: **To MD** and **From MD**; optional `config.json` + `convert.bat` / `run.py`
 - Offline conversion after the one-time package step
 - **LLM** Markdown and a **reading** copy (or both)
 - RTL (Persian, Arabic, and similar), LTR (English and similar), and mixed documents
@@ -294,13 +298,39 @@ Pinned libraries today: `pypdf`, `fonttools`, `python-docx`, `pypdfium2`, `pillo
 - Optional Latin `1–9` → Persian `۱–۹` (image link URLs left alone)
 - Optional LLM split: `parts/01-….md` (one file per `#` heading)
 - If `overwrite` is false, extra runs use `name(2)`, `name(3)`, …
-- `convert.log` in each job folder
+- `convert.log` in each To MD job folder
+- **From MD:** Markdown → HTML, Word `.docx`, PDF, TXT into `output/<format>/` (tick several formats at once)
 
 <div dir="rtl" align="right">
 
 ### امکانات
 
-PDF و DOCX مدرن؛ یک فایل یا پوشه؛ صفحهٔ محلی؛ کار آفلاین بعد از نصب بسته؛ خروجی LLM و خواندنی؛ یونیکد منطقی و ترتیب راست‌به‌چپ وقتی بازیابی ممکن باشد؛ جدول Markdown و در صورت تمایل تصویر جدول/شکل؛ سرآیند YAML؛ ارقام فارسی اختیاری؛ تقسیم بر عنوان سطح یک برای LLM؛ نام‌گذاری امن در صورت خاموش بودن overwrite؛ و `convert.log`.
+PDF و DOCX مدرن؛ یک فایل یا پوشه؛ صفحهٔ محلی با دو تب (به Markdown / از Markdown)؛ کار آفلاین بعد از نصب بسته؛ خروجی LLM و خواندنی؛ یونیکد منطقی و ترتیب راست‌به‌چپ وقتی بازیابی ممکن باشد؛ جدول Markdown و در صورت تمایل تصویر جدول/شکل؛ سرآیند YAML؛ ارقام فارسی اختیاری؛ تقسیم بر عنوان سطح یک برای LLM؛ نام‌گذاری امن در صورت خاموش بودن overwrite؛ `convert.log`؛ و خروجی HTML / ورد / PDF / TXT از فایل Markdown.
+
+</div>
+
+---
+
+## From Markdown
+
+The **From MD** tab writes each chosen format into its own folder under `output_root` (default `output/`):
+
+| Format | Folder | File |
+|--------|--------|------|
+| HTML | `output/html/` | `.html` |
+| Word | `output/docx/` | `.docx` (not old `.doc`) |
+| PDF | `output/pdf/` | `.pdf` when Edge or Chrome is installed; otherwise a printable `.print.html` |
+| Plain text | `output/txt/` | `.txt` (Markdown body without YAML) |
+
+You can select several formats in one run. Same-name files get `(2)`, `(3)`, … unless overwrite is on. After a **To MD** conversion, the result card also has buttons that download the same formats (those copies are saved next to that job’s `.md` as well).
+
+PDF export is local: it asks Microsoft Edge or Google Chrome to print HTML to PDF. No cloud conversion.
+
+<div dir="rtl" align="right">
+
+### از Markdown
+
+در تب **از Markdown** قالب‌ها را تیک بزنید. هر قالب پوشهٔ خودش را زیر `output/` می‌سازد: `html`، `docx`، `pdf`، `txt`. چند قالب با هم مجاز است. PDF با مرورگر محلی ساخته می‌شود؛ اگر Edge/Chrome نباشد، یک HTML برای چاپ ذخیره می‌شود. ورد قدیمی `.doc` پشتیبانی نمی‌شود.
 
 </div>
 
@@ -352,16 +382,26 @@ output/
 │       │   └── page-01-figure.png
 │       └── parts/
 │           └── 01-Introduction.md
-└── reading/
-    └── Extracted pages from/
-        ├── Extracted pages from.md
-        ├── convert.log
-        └── assets/
-            └── page-01-table.png
+├── reading/
+│   └── Extracted pages from/
+│       ├── Extracted pages from.md
+│       ├── convert.log
+│       └── assets/
+│           └── page-01-table.png
+├── html/
+│   └── notes.html
+├── docx/
+│   └── notes.docx
+├── pdf/
+│   └── notes.pdf
+└── txt/
+    └── notes.txt
 ```
 
 | Item | Role |
 |------|------|
+| `llm/`, `reading/` | To MD jobs (Markdown, optional `assets/` and `parts/`) |
+| `html/`, `docx/`, `pdf/`, `txt/` | From MD exports, one folder per format |
 | `*.md` | Main Markdown (YAML header + body) |
 | `assets/` | Optional PNG crops (tables/figures). LLM and reading each have their own copy |
 | `parts/` | Extra LLM files split on `#` headings |
@@ -372,7 +412,7 @@ output/
 
 ### خروجی
 
-فایل اصلی Markdown، پوشهٔ `assets` برای تصویرها، `parts` برای تکه‌های LLM، و `convert.log` برای ردگیری تبدیل. سرآیند YAML مشخصات سند را بالای فایل می‌گذارد.
+تبدیل به Markdown در `llm/` و `reading/` است. خروجی از Markdown در `html/`، `docx/`، `pdf/` و `txt/` ذخیره می‌شود.
 
 </div>
 
@@ -404,12 +444,13 @@ output/
 | Scanned PDF with no text layer | There are no characters to map | Cannot invent text | OCR first, or check those pages by hand |
 | Encrypted, damaged, or odd fonts | Glyph map may be missing or hostile | Recovers when the embedded font allows | Export again from Word, keep the original, report a **non-sensitive** sample |
 | Mixed RTL/LTR with code, URLs, IPs, hashes | Bidi layout is hard | Aims for logical Unicode and position-based RTL | Skim the **reading** output for those lines |
+| PDF export without Edge/Chrome | Headless print needs a local browser | Writes `.print.html` instead of `.pdf` | Open that HTML and Print → Save as PDF |
 
 <div dir="rtl" align="right">
 
 ### محدودیت‌ها
 
-جدول ادغامی واقعی در Markdown نیست؛ چیدمان تزئینی صفحه حفظ نمی‌شود؛ PDF اسکن‌شده متن ندارد؛ فونت خراب یا فایل رمزگذاری‌شده ممکن است کامل بازیابی نشود؛ مخلوط راست‌به‌چپ و کد/نشانی وب را یک‌بار در خروجی خواندنی نگاه کنید.
+جدول ادغامی واقعی در Markdown نیست؛ چیدمان تزئینی صفحه حفظ نمی‌شود؛ PDF اسکن‌شده متن ندارد؛ فونت خراب یا فایل رمزگذاری‌شده ممکن است کامل بازیابی نشود؛ مخلوط راست‌به‌چپ و کد/نشانی وب را یک‌بار در خروجی خواندنی نگاه کنید. اگر Edge/Chrome نباشد، خروجی PDF یک HTML قابل چاپ است.
 
 </div>
 

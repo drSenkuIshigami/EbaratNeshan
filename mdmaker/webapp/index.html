@@ -132,16 +132,77 @@
     .warn { color: #e0c36a; font-size: 0.9rem; }
     p.err { color: var(--bad); margin: 0.4rem 0 0; }
     .en { direction: ltr; unicode-bidi: isolate; }
+    .tabs {
+      display: flex;
+      gap: 0.4rem;
+      margin: 0 0 1rem;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.35rem;
+    }
+    .tab {
+      flex: 1;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 650;
+    }
+    .tab.on {
+      background: var(--accent);
+      color: #061018;
+    }
+    .panel[hidden] { display: none !important; }
+    #drop-md {
+      border: 1.5px dashed #4a6278;
+      background: var(--drop);
+      border-radius: 12px;
+      padding: 1.6rem 1rem;
+      text-align: center;
+      cursor: pointer;
+    }
+    #drop-md.over, #drop-md:hover {
+      border-color: var(--accent);
+      background: #1d3348;
+    }
+    #drop-md strong { display: block; font-size: 1.05rem; margin-bottom: 0.35rem; }
+    #drop-md span { color: var(--muted); font-size: 0.92rem; }
+    #filename-md { margin-top: 0.7rem; color: var(--ok); min-height: 1.2rem; }
+    #filelist-md {
+      margin: 0.55rem 0 0;
+      padding: 0;
+      max-height: 9rem;
+      overflow: auto;
+      text-align: start;
+      font-size: 0.86rem;
+      color: var(--ok);
+    }
+    #filelist-md li { list-style: none; padding: 0.12rem 0; word-break: break-all; }
+    #go-md {
+      background: var(--accent);
+      color: #061018;
+      font-weight: 700;
+      min-width: 10rem;
+    }
+    #go-md:disabled { opacity: 0.45; cursor: not-allowed; }
+    #status-md { min-height: 1.4rem; margin: 0.4rem 0 0; }
+    #status-md.err { color: var(--bad); }
+    #status-md.ok { color: var(--ok); }
   </style>
 </head>
 <body>
   <main>
     <h1>EbaratNeshan <span style="font-weight:500;color:var(--muted)">عبارت‌نشان</span></h1>
     <p class="sub">
-      سند را به Markdown تبدیل کنید — روی همین رایانه، بدون اینترنت.
-      <span class="en">Drop files or a folder. Stays on this computer.</span>
+      سند را به Markdown تبدیل کنید یا Markdown را به فایل‌های دیگر ببرید — روی همین رایانه.
+      <span class="en">To Markdown or from Markdown. Stays on this computer.</span>
     </p>
 
+    <div class="tabs" role="tablist">
+      <button class="tab on" type="button" id="tab-to" data-tab="to-md">به Markdown / To MD</button>
+      <button class="tab" type="button" id="tab-from" data-tab="from-md">از Markdown / From MD</button>
+    </div>
+
+    <div id="panel-to-md" class="panel">
     <div class="card">
       <div id="drop">
         <strong>فایل‌ها یا پوشه را اینجا بکشید</strong>
@@ -184,6 +245,36 @@
     </div>
 
     <div id="result"></div>
+    </div>
+
+    <div id="panel-from-md" class="panel" hidden>
+      <div class="card">
+        <div id="drop-md">
+          <strong>فایل Markdown را اینجا بکشید</strong>
+          <span class="en">Drop .md files or a folder, or use the buttons below</span>
+          <div id="filename-md"></div>
+          <ul id="filelist-md"></ul>
+        </div>
+        <input id="file-md" type="file" multiple accept=".md,text/markdown" hidden>
+        <input id="folder-md" type="file" webkitdirectory directory hidden>
+        <div class="row">
+          <button id="pick-files-md" class="ghost" type="button">انتخاب فایل‌ها / Choose files</button>
+          <button id="pick-folder-md" class="ghost" type="button">انتخاب پوشه / Choose folder</button>
+          <button id="clear-md" class="ghost" type="button">پاک کردن / Clear</button>
+        </div>
+        <p style="margin:1rem 0 0.3rem">قالب خروجی / <span class="en">Formats (saved under output/html, output/docx, …)</span></p>
+        <label class="opt"><input type="checkbox" class="fmt" value="html" checked> HTML — <span class="en">output/html</span></label>
+        <label class="opt"><input type="checkbox" class="fmt" value="docx" checked> Word .docx — <span class="en">output/docx</span></label>
+        <label class="opt"><input type="checkbox" class="fmt" value="pdf" checked> PDF — <span class="en">output/pdf</span></label>
+        <label class="opt"><input type="checkbox" class="fmt" value="txt"> TXT — <span class="en">output/txt</span></label>
+        <label class="opt"><input type="checkbox" id="overwrite-md"> بازنویسی فایل هم‌نام / <span class="en">overwrite same name</span></label>
+        <div class="row">
+          <button id="go-md" type="button" disabled>خروجی / Export</button>
+        </div>
+        <p id="status-md"></p>
+      </div>
+      <div id="result-md"></div>
+    </div>
   </main>
   <script>
     const drop = document.getElementById("drop");
@@ -195,6 +286,16 @@
     const statusEl = document.getElementById("status");
     const resultEl = document.getElementById("result");
     let chosen = [];
+    let chosenMd = [];
+
+    document.querySelectorAll(".tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("on", b === btn));
+        const id = btn.getAttribute("data-tab");
+        document.getElementById("panel-to-md").hidden = id !== "to-md";
+        document.getElementById("panel-from-md").hidden = id !== "from-md";
+      });
+    });
 
     function isDoc(file) {
       const name = (file.name || "").toLowerCase();
@@ -399,6 +500,14 @@
         openBtn.textContent = "باز کردن پوشه / Open folder";
         openBtn.addEventListener("click", () => openFolder(out.folder));
         row.append(dl, openBtn);
+        [["html", "HTML"], ["docx", "Word .docx"], ["pdf", "PDF"], ["txt", "TXT"]].forEach(([fmt, label]) => {
+          const btn = document.createElement("button");
+          btn.className = "ghost";
+          btn.type = "button";
+          btn.textContent = label;
+          btn.addEventListener("click", () => exportFile(fmt, out));
+          row.appendChild(btn);
+        });
         const pre = document.createElement("pre");
         pre.textContent = out.markdown || "";
         card.append(title, path, row, pre);
@@ -416,6 +525,191 @@
       a.click();
       URL.revokeObjectURL(a.href);
     }
+
+    async function exportFile(fmt, out) {
+      const res = await fetch("/api/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          format: fmt,
+          markdown: out.markdown,
+          filename: out.path,
+          folder: out.folder
+        })
+      });
+      if (!res.ok) {
+        let msg = "Export failed.";
+        try { msg = (await res.json()).error || msg; } catch (e) {}
+        setStatus(msg, true);
+        return;
+      }
+      const type = res.headers.get("Content-Type") || "";
+      const name = decodeURIComponent(res.headers.get("X-Export-Name") || "document");
+      const blob = await res.blob();
+      if (fmt === "pdf" && type.includes("html")) {
+        const html = await blob.text();
+        const w = window.open("", "_blank");
+        if (!w) {
+          setStatus("Allow pop-ups to save PDF, or use the HTML button and Print.", true);
+          return;
+        }
+        w.document.write(html);
+        w.document.close();
+        return;
+      }
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    const dropMd = document.getElementById("drop-md");
+    const fileMd = document.getElementById("file-md");
+    const folderMd = document.getElementById("folder-md");
+    const goMd = document.getElementById("go-md");
+    const filenameMd = document.getElementById("filename-md");
+    const fileListMd = document.getElementById("filelist-md");
+    const statusMd = document.getElementById("status-md");
+    const resultMd = document.getElementById("result-md");
+
+    function isMd(file) {
+      return (file.name || "").toLowerCase().endsWith(".md");
+    }
+
+    function setMdFiles(files, skipped) {
+      const docs = [];
+      const seen = new Set();
+      for (const file of files) {
+        if (!isMd(file)) continue;
+        const key = fileKey(file);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        docs.push(file);
+      }
+      docs.sort((a, b) => label(a).localeCompare(label(b), "fa"));
+      chosenMd = docs;
+      fileListMd.innerHTML = "";
+      if (!docs.length) {
+        filenameMd.textContent = "";
+        goMd.disabled = true;
+        statusMd.textContent = skipped
+          ? "در این پوشه Markdown نبود. / No .md files in that folder."
+          : "فقط فایل .md / Only .md files.";
+        statusMd.className = "err";
+        return;
+      }
+      filenameMd.textContent = docs.length === 1 ? docs[0].name : `${docs.length} files`;
+      docs.slice(0, 12).forEach((file) => {
+        const li = document.createElement("li");
+        li.textContent = label(file);
+        fileListMd.appendChild(li);
+      });
+      if (docs.length > 12) {
+        const li = document.createElement("li");
+        li.textContent = `… +${docs.length - 12}`;
+        fileListMd.appendChild(li);
+      }
+      goMd.disabled = false;
+      statusMd.textContent = "";
+      statusMd.className = "";
+    }
+
+    dropMd.addEventListener("click", () => fileMd.click());
+    document.getElementById("pick-files-md").addEventListener("click", () => fileMd.click());
+    document.getElementById("pick-folder-md").addEventListener("click", () => folderMd.click());
+    document.getElementById("clear-md").addEventListener("click", () => {
+      chosenMd = [];
+      fileMd.value = "";
+      folderMd.value = "";
+      filenameMd.textContent = "";
+      fileListMd.innerHTML = "";
+      goMd.disabled = true;
+      statusMd.textContent = "";
+      resultMd.innerHTML = "";
+    });
+    dropMd.addEventListener("dragover", (e) => { e.preventDefault(); dropMd.classList.add("over"); });
+    dropMd.addEventListener("dragleave", () => dropMd.classList.remove("over"));
+    dropMd.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      dropMd.classList.remove("over");
+      const collected = [];
+      const items = [...(e.dataTransfer.items || [])];
+      if (items.some((item) => item.webkitGetAsEntry && item.webkitGetAsEntry())) {
+        for (const item of items) await collectEntry(item.webkitGetAsEntry(), collected);
+      }
+      if (!collected.length) collected.push(...e.dataTransfer.files);
+      setMdFiles(collected, collected.filter((f) => !isMd(f)).length);
+    });
+    fileMd.addEventListener("change", () => {
+      const files = [...fileMd.files];
+      setMdFiles(files, files.filter((f) => !isMd(f)).length);
+    });
+    folderMd.addEventListener("change", () => {
+      const files = [...folderMd.files];
+      setMdFiles(files, files.filter((f) => !isMd(f)).length);
+    });
+
+    goMd.addEventListener("click", async () => {
+      if (!chosenMd.length) return;
+      const formats = [...document.querySelectorAll(".fmt:checked")].map((el) => el.value);
+      if (!formats.length) {
+        statusMd.textContent = "حداقل یک قالب را انتخاب کنید. / Choose at least one format.";
+        statusMd.className = "err";
+        return;
+      }
+      goMd.disabled = true;
+      resultMd.innerHTML = "";
+      statusMd.textContent = "در حال خروجی… / Exporting…";
+      statusMd.className = "ok";
+      const data = new FormData();
+      chosenMd.forEach((file) => data.append("file", file, file.name));
+      data.append("formats", formats.join(","));
+      data.append("overwrite", document.getElementById("overwrite-md").checked);
+      try {
+        const res = await fetch("/api/from-md", { method: "POST", body: data });
+        const json = await res.json();
+        if (!json.ok && !(json.outputs || []).length) {
+          statusMd.textContent = json.error || "Export failed.";
+          statusMd.className = "err";
+          goMd.disabled = false;
+          return;
+        }
+        const n = (json.outputs || []).length;
+        statusMd.textContent = `تمام شد: ${n} file(s) under output/html, output/docx, …`;
+        statusMd.className = json.errors && json.errors.length ? "err" : "ok";
+        const card = document.createElement("div");
+        card.className = "card";
+        if (json.errors && json.errors.length) {
+          const w = document.createElement("div");
+          w.className = "warn";
+          w.textContent = json.errors.join("\n");
+          card.appendChild(w);
+        }
+        (json.outputs || []).forEach((item) => {
+          const p = document.createElement("div");
+          p.className = "path";
+          p.textContent = `${item.format}: ${item.path}`;
+          card.appendChild(p);
+        });
+        const row = document.createElement("div");
+        row.className = "row";
+        (json.folders || []).forEach((folder) => {
+          const btn = document.createElement("button");
+          btn.className = "ghost";
+          btn.type = "button";
+          btn.textContent = "باز کردن " + folder.split(/[/\\]/).pop();
+          btn.addEventListener("click", () => openFolder(folder));
+          row.appendChild(btn);
+        });
+        card.appendChild(row);
+        resultMd.appendChild(card);
+      } catch (err) {
+        statusMd.textContent = "Server error: " + err;
+        statusMd.className = "err";
+      }
+      goMd.disabled = false;
+    });
 
     async function openFolder(folder) {
       await fetch("/api/open-folder", {

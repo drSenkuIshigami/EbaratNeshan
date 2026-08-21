@@ -12,9 +12,10 @@ import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 from .cli import convert_one
+from .export import export_bytes
 from .settings import ROOT, SUPPORTED_SUFFIXES, load_config
 
 HOST = "127.0.0.1"
@@ -85,6 +86,12 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/open-folder":
             self._open_folder()
             return
+        if parsed.path == "/api/export":
+            self._export()
+            return
+        if parsed.path == "/api/from-md":
+            self._from_md()
+            return
         self._send_status(404, "Not found")
 
     def _convert(self) -> None:
@@ -93,11 +100,11 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError as exc:
             self._json({"ok": False, "error": str(exc)}, status=400)
             return
-        upload = files.get("file")
-        if not upload:
+        upload_list = files.get("file") or []
+        if not upload_list:
             self._json({"ok": False, "error": "Choose a PDF or DOCX file."}, status=400)
             return
-        filename, payload = upload
+        filename, payload = upload_list[0]
         name = _safe_filename(filename)
         suffix = Path(name).suffix.lower()
         if suffix not in SUPPORTED_SUFFIXES:
@@ -148,6 +155,116 @@ class Handler(BaseHTTPRequestHandler):
         _reveal_folder(folder)
         self._json({"ok": True})
 
+    def _export(self) -> None:
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+            if length <= 0 or length > 8 * 1024 * 1024:
+                raise ValueError("Empty or too large.")
+            data = json.loads(self.rfile.read(length).decode("utf-8"))
+            markdown = str(data.get("markdown") or "")
+            fmt = str(data.get("format") or "html")
+            filename = str(data.get("filename") or "document.md")
+            folder = Path(str(data.get("folder") or "")) if data.get("folder") else None
+        except (ValueError, json.JSONDecodeError):
+            self._json({"ok": False, "error": "Bad export request."}, status=400)
+            return
+        if not markdown.strip():
+            self._json({"ok": False, "error": "No Markdown to export."}, status=400)
+            return
+        base = None
+        if folder and folder.is_dir() and _is_under(folder, Path(load_config()["output_root"])):
+            base = folder
+        try:
+            payload, out_name, content_type = export_bytes(
+                markdown, fmt, title=filename, base_dir=base
+            )
+        except ValueError as exc:
+            self._json({"ok": False, "error": str(exc)}, status=400)
+            return
+        except Exception as exc:
+            self._json({"ok": False, "error": str(exc)}, status=500)
+            return
+        if base:
+            dest = base / Path(out_name).name
+            dest.write_bytes(payload)
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header(
+            "Content-Disposition",
+            f"attachment; filename*=UTF-8''{quote(out_name)}",
+        )
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Export-Name", quote(out_name))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def _from_md(self) -> None:
+        try:
+            fields, files = _parse_multipart(self)
+        except ValueError as exc:
+            self._json({"ok": False, "error": str(exc)}, status=400)
+            return
+        uploads = files.get("file") or []
+        if not uploads:
+            self._json({"ok": False, "error": "Choose one or more .md files."}, status=400)
+            return
+        raw_formats = fields.get("formats") or "html,docx"
+        wanted = []
+        for item in raw_formats.replace(";", ",").split(","):
+            fmt = item.strip().lower()
+            if fmt == "doc":
+                fmt = "docx"
+            if fmt in {"html", "docx", "pdf", "txt"} and fmt not in wanted:
+                wanted.append(fmt)
+        if not wanted:
+            self._json({"ok": False, "error": "Choose at least one format: html, docx, pdf, txt."}, status=400)
+            return
+        cfg = load_config()
+        overwrite = _flag(fields.get("overwrite"), False)
+        out_root = Path(cfg["output_root"])
+        written = []
+        errors = []
+        with CONVERT_LOCK:
+            for filename, payload in uploads[:50]:
+                name = _safe_filename(filename)
+                if Path(name).suffix.lower() != ".md":
+                    errors.append(f"{filename}: not a .md file")
+                    continue
+                try:
+                    text = payload.decode("utf-8")
+                except UnicodeDecodeError:
+                    text = payload.decode("utf-8", errors="replace")
+                if not text.strip():
+                    errors.append(f"{name}: empty")
+                    continue
+                src_dir = None
+                for fmt in wanted:
+                    folder = out_root / fmt
+                    folder.mkdir(parents=True, exist_ok=True)
+                    try:
+                        blob, out_name, _ctype = export_bytes(
+                            text, fmt, title=name, base_dir=src_dir
+                        )
+                    except Exception as exc:
+                        errors.append(f"{name} → {fmt}: {exc}")
+                        continue
+                    dest = folder / Path(out_name).name
+                    if overwrite and dest.exists():
+                        dest.unlink()
+                    elif dest.exists():
+                        dest = _unique_path(dest)
+                    dest.write_bytes(blob)
+                    written.append({"file": name, "format": fmt, "path": str(dest), "folder": str(folder)})
+        self._json(
+            {
+                "ok": bool(written),
+                "outputs": written,
+                "errors": errors,
+                "folders": sorted({item["folder"] for item in written}),
+            }
+        )
+
     def _send_file(self, path: Path, content_type: str) -> None:
         if not path.is_file():
             self._send_status(404, "Not found")
@@ -178,7 +295,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
-def _parse_multipart(handler: BaseHTTPRequestHandler) -> tuple[dict[str, str], dict[str, tuple[str, bytes]]]:
+def _parse_multipart(handler: BaseHTTPRequestHandler) -> tuple[dict[str, str], dict[str, list[tuple[str, bytes]]]]:
     content_type = handler.headers.get("Content-Type", "")
     if "multipart/form-data" not in content_type.lower():
         raise ValueError("Expected a file upload.")
@@ -193,7 +310,7 @@ def _parse_multipart(handler: BaseHTTPRequestHandler) -> tuple[dict[str, str], d
         raise ValueError("File is larger than 80 MB.")
     body = handler.rfile.read(length)
     fields: dict[str, str] = {}
-    files: dict[str, tuple[str, bytes]] = {}
+    files: dict[str, list[tuple[str, bytes]]] = {}
     for raw in body.split(b"--" + boundary):
         if not raw or raw in {b"--", b"--\r\n", b"--\n"}:
             continue
@@ -224,7 +341,7 @@ def _parse_multipart(handler: BaseHTTPRequestHandler) -> tuple[dict[str, str], d
             continue
         name = name_m.group(1)
         if file_m and file_m.group(1):
-            files[name] = (file_m.group(1), payload)
+            files.setdefault(name, []).append((file_m.group(1), payload))
         else:
             fields[name] = payload.decode("utf-8", errors="replace")
     return fields, files
