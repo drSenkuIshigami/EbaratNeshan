@@ -64,10 +64,14 @@ EbaratNeshan is designed to preserve **logical Unicode** and reading order as ac
 **GitHub topics:** `pdf` `markdown` `persian` `arabic` `rtl` `llm` `rag` `offline` `docx` `ocr-alternative`
 
 <p align="center">
-  <img src="docs/local-page.jpg" alt="EbaratNeshan local page: drop PDF or DOCX, choose LLM or reading, convert on this computer" width="720">
+  <img src="docs/to-md.jpeg" alt="To MD tab: drop PDF or DOCX files or a folder, choose LLM or reading, convert on this computer" width="720">
 </p>
+<p align="center"><em><strong>To MD</strong> — PDF / DOCX → Markdown. Local page at <code>http://127.0.0.1:8765/</code>. Nothing is uploaded.</em></p>
 
-<p align="center"><em>Local page at <code>http://127.0.0.1:8765/</code> — two tabs: To MD (PDF/DOCX) and From MD (export). Screenshot shows the To MD tab. Nothing is uploaded.</em></p>
+<p align="center">
+  <img src="docs/from-md.jpeg" alt="From MD tab: drop Markdown files, choose HTML, Word, PDF, or TXT, export into output folders" width="720">
+</p>
+<p align="center"><em><strong>From MD</strong> — Markdown → HTML / Word / PDF / TXT under <code>output/html</code>, <code>output/docx</code>, <code>output/pdf</code>, <code>output/txt</code>.</em></p>
 
 ---
 
