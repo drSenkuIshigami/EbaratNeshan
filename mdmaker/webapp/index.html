@@ -231,6 +231,15 @@
       color: var(--muted);
     }
     #template-name { margin-top: 0.35rem; font-size: 0.92rem; }
+    .out-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.55rem;
+      margin-bottom: 0.45rem;
+    }
+    .out-line .path { margin-bottom: 0; flex: 1 1 12rem; }
+    .out-line .ghost { padding: 0.4rem 0.8rem; }
   </style>
 </head>
 <body>
@@ -940,22 +949,19 @@
           card.appendChild(w);
         }
         (json.outputs || []).forEach((item) => {
+          const line = document.createElement("div");
+          line.className = "out-line";
           const p = document.createElement("div");
           p.className = "path";
           p.textContent = `${item.format}: ${item.path}`;
-          card.appendChild(p);
-        });
-        const row = document.createElement("div");
-        row.className = "row";
-        (json.folders || []).forEach((folder) => {
           const btn = document.createElement("button");
           btn.className = "ghost";
           btn.type = "button";
-          btn.textContent = t("openFolderNamed", folder.split(/[/\\]/).pop());
-          btn.addEventListener("click", () => openFolder(folder));
-          row.appendChild(btn);
+          btn.textContent = t("openFolder");
+          btn.addEventListener("click", () => openFolder(item.folder));
+          line.append(p, btn);
+          card.appendChild(line);
         });
-        card.appendChild(row);
         resultMd.appendChild(card);
       } catch (err) {
         statusMd.textContent = t("serverError", err);
