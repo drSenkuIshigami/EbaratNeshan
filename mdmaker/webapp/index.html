@@ -240,6 +240,74 @@
     }
     .out-line .path { margin-bottom: 0; flex: 1 1 12rem; }
     .out-line .ghost { padding: 0.4rem 0.8rem; }
+    #style-gallery {
+      margin-top: 0.7rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--bg);
+      max-height: 28rem;
+      overflow: auto;
+      display: none;
+    }
+    #style-gallery.open { display: block; }
+    #style-gallery .gallery-head {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 0.7rem;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+    #style-gallery .gallery-filters { display: flex; gap: 0.35rem; }
+    #style-gallery .chip {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 0.2rem 0.65rem;
+      font-size: 0.78rem;
+    }
+    #style-gallery .chip.on {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .style-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.35rem 0.7rem;
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .style-row:last-child { border-bottom: 0; }
+    .style-sample {
+      margin: 0;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+    .style-meta {
+      grid-column: 1 / -1;
+      font-size: 0.72rem;
+      color: var(--muted);
+      direction: ltr;
+      text-align: start;
+      unicode-bidi: isolate;
+    }
+    .style-badge {
+      align-self: start;
+      font-size: 0.68rem;
+      color: var(--accent-ink);
+      background: var(--accent);
+      border-radius: 999px;
+      padding: 0.12rem 0.45rem;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
@@ -330,8 +398,10 @@
           <div class="row">
             <button id="pick-template" class="ghost" type="button" data-i18n="chooseTemplate">انتخاب قالب</button>
             <button id="clear-template" class="ghost" type="button" data-i18n="clearTemplate">حذف قالب</button>
+            <button id="preview-styles" class="ghost" type="button" data-i18n="previewStyles" hidden>نمایش سبک‌ها</button>
           </div>
           <div id="template-name"></div>
+          <div id="style-gallery" aria-live="polite"></div>
         </div>
         <label class="opt"><input type="checkbox" id="overwrite-md"> <span data-i18n="optOverwriteFile">بازنویسی فایل هم‌نام</span></label>
         <div class="row">
@@ -374,14 +444,22 @@
         templateHint: "حاشیه‌ها، سرصفحه/پاصفحه و سبک‌ها از این فایل گرفته می‌شوند. متن بدنه از Markdown پر می‌شود.",
         chooseTemplate: "انتخاب قالب",
         clearTemplate: "حذف قالب",
+        previewStyles: "نمایش سبک‌ها",
+        hideStyles: "بستن سبک‌ها",
+        stylesLoading: "در حال خواندن سبک‌ها…",
+        stylesFailed: "خواندن سبک‌ها ناموفق بود.",
+        stylesCount: (n, mapped) => `${n} سبک پاراگراف · ${mapped} مورد استفاده در خروجی`,
+        stylesAll: "همه",
+        stylesMapped: "مورد استفاده",
+        styleUsed: "خروجی",
+        templateOnly: "فقط .docx یا .doc",
+        templateLabel: "قالب: ",
         optOverwriteFile: "بازنویسی فایل هم‌نام",
         export: "خروجی",
         onlyPdfDocx: "فقط PDF و DOCX.",
         noPdfDocxFolder: "در این پوشه PDF یا DOCX نبود.",
         onlyMd: "فقط فایل .md",
         noMdFolder: "در این پوشه Markdown نبود.",
-        templateOnly: "فقط .docx یا .doc",
-        templateLabel: "قالب: ",
         converting: (i, total, name) => `در حال تبدیل ${i} از ${total}: ${name}`,
         doneSaved: "تمام شد. فایل‌ها در پوشه output ذخیره شدند.",
         donePartial: (ok, fail) => `تمام شد: ${ok} موفق، ${fail} ناموفق.`,
@@ -435,6 +513,14 @@
         templateHint: "Margins, headers/footers, and styles are taken from this file. Body is filled from Markdown.",
         chooseTemplate: "Choose template",
         clearTemplate: "Clear template",
+        previewStyles: "View styles",
+        hideStyles: "Hide styles",
+        stylesLoading: "Reading styles…",
+        stylesFailed: "Could not read styles.",
+        stylesCount: (n, mapped) => `${n} paragraph styles · ${mapped} used in export`,
+        stylesAll: "All",
+        stylesMapped: "Used",
+        styleUsed: "Export",
         optOverwriteFile: "Overwrite same name",
         export: "Export",
         onlyPdfDocx: "Only PDF and DOCX.",
@@ -503,6 +589,11 @@
       if (chosenTemplate) {
         document.getElementById("template-name").textContent = t("templateLabel") + chosenTemplate.name;
       }
+      const previewBtn = document.getElementById("preview-styles");
+      if (previewBtn && !previewBtn.hidden) {
+        previewBtn.textContent = styleGalleryOpen && stylePreview ? t("hideStyles") : t("previewStyles");
+      }
+      if (styleGalleryOpen && stylePreview) renderStyleGallery();
       applyTheme();
     }
 
@@ -526,6 +617,9 @@
     let chosen = [];
     let chosenMd = [];
     let chosenTemplate = null;
+    let stylePreview = null;
+    let styleFilter = "mapped";
+    let styleGalleryOpen = false;
 
     function syncTemplateBox() {
       const docxOn = [...document.querySelectorAll(".fmt")].some((el) => el.value === "docx" && el.checked);
@@ -535,6 +629,132 @@
     document.querySelectorAll(".fmt").forEach((el) => el.addEventListener("change", syncTemplateBox));
     syncTemplateBox();
 
+    function clearStyleGallery() {
+      stylePreview = null;
+      styleGalleryOpen = false;
+      const gallery = document.getElementById("style-gallery");
+      gallery.classList.remove("open");
+      gallery.innerHTML = "";
+      const btn = document.getElementById("preview-styles");
+      btn.hidden = true;
+      btn.textContent = t("previewStyles");
+    }
+
+    function styleSampleCss(style) {
+      const fontCs = style.font_cs || "";
+      const font = style.font || "";
+      const stack = [fontCs, font, "Noto Naskh Arabic", "Tahoma", "Times New Roman", "serif"]
+        .filter(Boolean)
+        .map((name) => (name.includes(" ") ? `"${name}"` : name));
+      const size = style.size_cs_pt || style.size_pt || 12;
+      const css = {
+        fontFamily: [...new Set(stack)].join(", "),
+        fontSize: `${size}pt`,
+        fontWeight: style.bold ? "700" : "400",
+        fontStyle: style.italic ? "italic" : "normal",
+        textAlign: style.align || (style.rtl ? "right" : "start"),
+        direction: style.rtl ? "rtl" : "ltr",
+      };
+      if (style.space_before_pt) css.marginTop = `${Math.min(style.space_before_pt, 18)}pt`;
+      if (style.space_after_pt) css.marginBottom = `${Math.min(style.space_after_pt, 18)}pt`;
+      return css;
+    }
+
+    function renderStyleGallery() {
+      const gallery = document.getElementById("style-gallery");
+      const btn = document.getElementById("preview-styles");
+      if (!stylePreview || !styleGalleryOpen) {
+        gallery.classList.remove("open");
+        gallery.innerHTML = "";
+        btn.textContent = t("previewStyles");
+        return;
+      }
+      btn.textContent = t("hideStyles");
+      const styles = stylePreview.styles || [];
+      const mappedCount = styles.filter((s) => s.mapped).length;
+      const shown = styleFilter === "mapped" ? styles.filter((s) => s.mapped) : styles;
+      gallery.classList.add("open");
+      gallery.innerHTML = "";
+      const head = document.createElement("div");
+      head.className = "gallery-head";
+      const summary = document.createElement("div");
+      summary.textContent = t("stylesCount", styles.length, mappedCount);
+      const filters = document.createElement("div");
+      filters.className = "gallery-filters";
+      [["mapped", "stylesMapped"], ["all", "stylesAll"]].forEach(([id, key]) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "chip" + (styleFilter === id ? " on" : "");
+        chip.textContent = t(key);
+        chip.addEventListener("click", () => {
+          styleFilter = id;
+          renderStyleGallery();
+        });
+        filters.appendChild(chip);
+      });
+      head.append(summary, filters);
+      gallery.appendChild(head);
+      shown.forEach((style) => {
+        const row = document.createElement("div");
+        row.className = "style-row";
+        const sample = document.createElement("p");
+        sample.className = "style-sample";
+        sample.textContent = style.name;
+        Object.assign(sample.style, styleSampleCss(style));
+        row.appendChild(sample);
+        if (style.mapped) {
+          const badge = document.createElement("span");
+          badge.className = "style-badge";
+          badge.textContent = t("styleUsed");
+          row.appendChild(badge);
+        }
+        const meta = document.createElement("div");
+        meta.className = "style-meta";
+        const bits = [];
+        if (style.font_cs) bits.push(style.font_cs);
+        if (style.font && style.font !== style.font_cs) bits.push(style.font);
+        const size = style.size_cs_pt || style.size_pt;
+        if (size) bits.push(`${size} pt`);
+        if (style.bold) bits.push("bold");
+        if (style.align) bits.push(style.align);
+        if (style.rtl) bits.push("RTL");
+        if (style.base) bits.push(`← ${style.base}`);
+        meta.textContent = bits.join(" · ");
+        row.appendChild(meta);
+        gallery.appendChild(row);
+      });
+    }
+
+    async function loadStylePreview(file) {
+      const btn = document.getElementById("preview-styles");
+      const gallery = document.getElementById("style-gallery");
+      btn.hidden = false;
+      btn.disabled = true;
+      styleGalleryOpen = true;
+      gallery.classList.add("open");
+      gallery.innerHTML = `<div class="gallery-head">${t("stylesLoading")}</div>`;
+      const data = new FormData();
+      data.append("template", file, file.name);
+      try {
+        const res = await fetch("/api/template-styles", { method: "POST", body: data });
+        const json = await res.json();
+        if (!json.ok) {
+          gallery.innerHTML = `<div class="gallery-head">${json.error || t("stylesFailed")}</div>`;
+          stylePreview = null;
+          return;
+        }
+        stylePreview = json;
+        styleFilter = "mapped";
+        renderStyleGallery();
+      } catch (err) {
+        gallery.innerHTML = `<div class="gallery-head">${t("serverError", err)}</div>`;
+        stylePreview = null;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = styleGalleryOpen && stylePreview ? t("hideStyles") : t("previewStyles");
+      }
+    }
+
     document.getElementById("pick-template").addEventListener("click", () => {
       document.getElementById("file-template").click();
     });
@@ -542,6 +762,21 @@
       chosenTemplate = null;
       document.getElementById("file-template").value = "";
       document.getElementById("template-name").textContent = "";
+      clearStyleGallery();
+    });
+    document.getElementById("preview-styles").addEventListener("click", async () => {
+      if (!chosenTemplate) return;
+      if (styleGalleryOpen) {
+        styleGalleryOpen = false;
+        renderStyleGallery();
+        return;
+      }
+      if (stylePreview) {
+        styleGalleryOpen = true;
+        renderStyleGallery();
+        return;
+      }
+      await loadStylePreview(chosenTemplate);
     });
     document.getElementById("file-template").addEventListener("change", () => {
       const files = [...document.getElementById("file-template").files];
@@ -551,10 +786,17 @@
       if (!name.endsWith(".docx") && !name.endsWith(".doc")) {
         document.getElementById("template-name").textContent = t("templateOnly");
         chosenTemplate = null;
+        clearStyleGallery();
         return;
       }
       chosenTemplate = file;
       document.getElementById("template-name").textContent = t("templateLabel") + file.name;
+      document.getElementById("preview-styles").hidden = false;
+      document.getElementById("preview-styles").textContent = t("previewStyles");
+      stylePreview = null;
+      styleGalleryOpen = false;
+      document.getElementById("style-gallery").classList.remove("open");
+      document.getElementById("style-gallery").innerHTML = "";
     });
 
     document.querySelectorAll(".tab").forEach((btn) => {

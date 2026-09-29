@@ -92,6 +92,9 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/from-md":
             self._from_md()
             return
+        if parsed.path == "/api/template-styles":
+            self._template_styles()
+            return
         self._send_status(404, "Not found")
 
     def _convert(self) -> None:
@@ -296,6 +299,38 @@ class Handler(BaseHTTPRequestHandler):
                 "folders": sorted({item["folder"] for item in written}),
             }
         )
+
+    def _template_styles(self) -> None:
+        try:
+            _fields, files = _parse_multipart(self)
+        except ValueError as exc:
+            self._json({"ok": False, "error": str(exc)}, status=400)
+            return
+        uploads = files.get("template") or files.get("file") or []
+        if not uploads:
+            self._json({"ok": False, "error": "Choose a Word template (.docx or .doc)."}, status=400)
+            return
+        filename, payload = uploads[0]
+        name = _safe_filename(filename)
+        suffix = Path(name).suffix.lower()
+        if suffix not in {".docx", ".doc"}:
+            self._json({"ok": False, "error": "Word template must be .docx or .doc."}, status=400)
+            return
+        if len(payload) > MAX_UPLOAD:
+            self._json({"ok": False, "error": "File is larger than 80 MB."}, status=400)
+            return
+        UPLOADS.mkdir(parents=True, exist_ok=True)
+        dest = UPLOADS / f"style-preview-{_safe_filename(name)}"
+        dest.write_bytes(payload)
+        try:
+            from .docx_template import inspect_template_styles
+
+            with CONVERT_LOCK:
+                info = inspect_template_styles(dest)
+        except Exception as exc:
+            self._json({"ok": False, "error": str(exc)}, status=500)
+            return
+        self._json({"ok": True, **info})
 
     def _send_file(self, path: Path, content_type: str) -> None:
         if not path.is_file():

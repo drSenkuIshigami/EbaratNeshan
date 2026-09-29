@@ -109,6 +109,156 @@ def apply_paragraph_style(paragraph, style_name: str | None) -> None:
             pass
 
 
+def inspect_template_styles(path: str | Path) -> dict:
+    """Return paragraph styles from a Word template for a gallery preview."""
+    from docx import Document
+    from docx.enum.style import WD_STYLE_TYPE
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml.ns import qn
+
+    docx_path = ensure_docx_template(path)
+    document = Document(str(docx_path))
+    resolve = build_style_resolver(document)
+    mapped = {role: resolve(role) for role in DEFAULT_STYLE_MAP}
+    mapped_names = {name for name in mapped.values() if name}
+
+    align_map = {
+        WD_ALIGN_PARAGRAPH.LEFT: "left",
+        WD_ALIGN_PARAGRAPH.CENTER: "center",
+        WD_ALIGN_PARAGRAPH.RIGHT: "right",
+        WD_ALIGN_PARAGRAPH.JUSTIFY: "justify",
+    }
+
+    def style_chain(style):
+        seen: set[int] = set()
+        cur = style
+        while cur is not None and id(cur) not in seen:
+            yield cur
+            seen.add(id(cur))
+            try:
+                cur = cur.base_style
+            except Exception:
+                break
+
+    def first(style, getter):
+        for item in style_chain(style):
+            try:
+                value = getter(item)
+            except Exception:
+                value = None
+            if value is not None and value != "":
+                return value
+        return None
+
+    def run_props(style):
+        ascii_name = None
+        cs_name = None
+        size_pt = None
+        size_cs_pt = None
+        bold = None
+        italic = None
+        for item in style_chain(style):
+            r_pr = item.element.find(qn("w:rPr"))
+            if r_pr is None:
+                continue
+            fonts = r_pr.find(qn("w:rFonts"))
+            if fonts is not None:
+                if ascii_name is None:
+                    ascii_name = fonts.get(qn("w:ascii")) or fonts.get(qn("w:hAnsi"))
+                if cs_name is None:
+                    cs_name = fonts.get(qn("w:cs"))
+            if size_pt is None:
+                sz = r_pr.find(qn("w:sz"))
+                if sz is not None and sz.get(qn("w:val")):
+                    size_pt = int(sz.get(qn("w:val"))) / 2
+            if size_cs_pt is None:
+                sz_cs = r_pr.find(qn("w:szCs"))
+                if sz_cs is not None and sz_cs.get(qn("w:val")):
+                    size_cs_pt = int(sz_cs.get(qn("w:val"))) / 2
+            if bold is None and (
+                r_pr.find(qn("w:b")) is not None or r_pr.find(qn("w:bCs")) is not None
+            ):
+                bold = True
+            if italic is None and (
+                r_pr.find(qn("w:i")) is not None or r_pr.find(qn("w:iCs")) is not None
+            ):
+                italic = True
+        if ascii_name is None:
+            ascii_name = first(style, lambda s: s.font.name)
+        if size_pt is None:
+            size = first(style, lambda s: s.font.size)
+            if size is not None:
+                size_pt = float(size.pt)
+        if bold is None:
+            bold = first(style, lambda s: s.font.bold)
+        if italic is None:
+            italic = first(style, lambda s: s.font.italic)
+        return {
+            "font": ascii_name,
+            "font_cs": cs_name,
+            "size_pt": size_pt,
+            "size_cs_pt": size_cs_pt,
+            "bold": bool(bold) if bold is not None else False,
+            "italic": bool(italic) if italic is not None else False,
+        }
+
+    def para_props(style):
+        alignment = first(style, lambda s: s.paragraph_format.alignment)
+        rtl = False
+        for item in style_chain(style):
+            p_pr = item.element.find(qn("w:pPr"))
+            if p_pr is not None and p_pr.find(qn("w:bidi")) is not None:
+                rtl = True
+                break
+        space_before = first(style, lambda s: s.paragraph_format.space_before)
+        space_after = first(style, lambda s: s.paragraph_format.space_after)
+        return {
+            "align": align_map.get(alignment) if alignment is not None else None,
+            "rtl": rtl,
+            "space_before_pt": float(space_before.pt) if space_before is not None else None,
+            "space_after_pt": float(space_after.pt) if space_after is not None else None,
+        }
+
+    styles = []
+    for style in document.styles:
+        try:
+            if style.type != WD_STYLE_TYPE.PARAGRAPH:
+                continue
+            name = style.name
+        except Exception:
+            continue
+        if not name:
+            continue
+        try:
+            if style.hidden:
+                continue
+        except Exception:
+            pass
+        base = None
+        try:
+            base = style.base_style.name if style.base_style is not None else None
+        except Exception:
+            base = None
+        props = {**run_props(style), **para_props(style)}
+        styles.append(
+            {
+                "name": name,
+                "base": base,
+                "mapped": name in mapped_names,
+                **props,
+            }
+        )
+
+    styles.sort(key=lambda item: (not item["mapped"], item["name"].lower()))
+    return {
+        "file": Path(path).name,
+        "docx": docx_path.name,
+        "count": len(styles),
+        "mapped": {role: name for role, name in mapped.items() if name},
+        "styles": styles,
+    }
+
+
 def _convert_doc_to_docx(src: Path) -> Path:
     import os
     import time
