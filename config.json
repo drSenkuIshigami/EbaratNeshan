@@ -11,5 +11,6 @@
   "table_images": true,
   "figure_images": true,
   "persian_digits": false,
-  "split_llm": false
+  "split_llm": false,
+  "docx_template": ""
 }

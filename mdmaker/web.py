@@ -223,6 +223,26 @@ class Handler(BaseHTTPRequestHandler):
         cfg = load_config()
         overwrite = _flag(fields.get("overwrite"), False)
         out_root = Path(cfg["output_root"])
+        template_path = None
+        template_uploads = files.get("template") or []
+        if template_uploads:
+            t_name, t_payload = template_uploads[0]
+            suffix = Path(_safe_filename(t_name)).suffix.lower()
+            if suffix not in {".docx", ".doc"}:
+                self._json(
+                    {"ok": False, "error": "Word template must be .docx or .doc."},
+                    status=400,
+                )
+                return
+            UPLOADS.mkdir(parents=True, exist_ok=True)
+            template_path = UPLOADS / f"template-{_safe_filename(t_name)}"
+            template_path.write_bytes(t_payload)
+        elif cfg.get("docx_template"):
+            candidate = Path(str(cfg["docx_template"]))
+            if not candidate.is_absolute():
+                candidate = ROOT / candidate
+            if candidate.is_file():
+                template_path = candidate
         written = []
         errors = []
         with CONVERT_LOCK:
@@ -244,7 +264,11 @@ class Handler(BaseHTTPRequestHandler):
                     folder.mkdir(parents=True, exist_ok=True)
                     try:
                         blob, out_name, _ctype = export_bytes(
-                            text, fmt, title=name, base_dir=src_dir
+                            text,
+                            fmt,
+                            title=name,
+                            base_dir=src_dir,
+                            template=template_path if fmt == "docx" else None,
                         )
                     except Exception as exc:
                         errors.append(f"{name} → {fmt}: {exc}")
@@ -255,7 +279,15 @@ class Handler(BaseHTTPRequestHandler):
                     elif dest.exists():
                         dest = _unique_path(dest)
                     dest.write_bytes(blob)
-                    written.append({"file": name, "format": fmt, "path": str(dest), "folder": str(folder)})
+                    written.append(
+                        {
+                            "file": name,
+                            "format": fmt,
+                            "path": str(dest),
+                            "folder": str(folder),
+                            "template": bool(template_path) if fmt == "docx" else False,
+                        }
+                    )
         self._json(
             {
                 "ok": bool(written),

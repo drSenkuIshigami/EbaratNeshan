@@ -25,3 +25,7 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/*.log
+
+# Word lock files and cached .doc→.docx template conversions
+~$*
+*.ebarat-template.docx

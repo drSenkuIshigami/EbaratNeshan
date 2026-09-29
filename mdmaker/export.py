@@ -32,6 +32,7 @@ def export_bytes(
     fmt: str,
     title: str = "document",
     base_dir: Path | None = None,
+    template: str | Path | None = None,
 ) -> tuple[bytes, str, str]:
     """Return (payload, filename, content_type)."""
     fmt = fmt.lower().strip()
@@ -47,7 +48,7 @@ def export_bytes(
         data = body.encode("utf-8")
         return data, f"{stem}.txt", "text/plain; charset=utf-8"
     if fmt in {"docx", "doc"}:
-        data = markdown_to_docx(body, title=stem, rtl=rtl)
+        data = markdown_to_docx(body, title=stem, rtl=rtl, template=template)
         return data, f"{stem}.docx", (
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
@@ -98,36 +99,54 @@ def markdown_to_html(markdown: str, *, title: str, rtl: bool, for_print: bool = 
 """
 
 
-def markdown_to_docx(markdown: str, *, title: str, rtl: bool) -> bytes:
+def markdown_to_docx(
+    markdown: str,
+    *,
+    title: str,
+    rtl: bool,
+    template: str | Path | None = None,
+) -> bytes:
     from docx import Document
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
     from docx.shared import Pt
 
-    doc = Document()
-    if rtl:
-        sect = doc.sections[0]._sectPr
-        if sect.find(qn("w:bidi")) is None:
-            sect.append(OxmlElement("w:bidi"))
+    from .docx_template import apply_paragraph_style, build_style_resolver, open_template_document
 
+    tmp_path: Path | None = None
+    using_template = bool(template)
+    if using_template:
+        doc, tmp_path = open_template_document(template)
+    else:
+        doc = Document()
+        if rtl:
+            sect = doc.sections[0]._sectPr
+            if sect.find(qn("w:bidi")) is None:
+                sect.append(OxmlElement("w:bidi"))
+
+    resolve = build_style_resolver(doc) if using_template else (lambda _role: None)
     body_md = _prepare_export_text(markdown, rtl=rtl)
+    body_para_index = 0
 
     def style_paragraph(paragraph, *, force_ltr: bool = False) -> None:
-        if force_ltr or not rtl:
+        if force_ltr:
             paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            return
+        if not rtl:
             return
         pPr = paragraph._p.get_or_add_pPr()
         if pPr.find(qn("w:bidi")) is None:
             pPr.append(OxmlElement("w:bidi"))
-        # Match sample tables: paragraph mark itself carries rtl.
         p_rPr = pPr.find(qn("w:rPr"))
         if p_rPr is None:
             p_rPr = OxmlElement("w:rPr")
             pPr.append(p_rPr)
         if p_rPr.find(qn("w:rtl")) is None:
             p_rPr.append(OxmlElement("w:rtl"))
-        paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        # Template styles already own alignment/fonts; don't override them.
+        if not using_template:
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
 
     def write_text(paragraph, text: str, *, force_ltr: bool = False) -> None:
         style_paragraph(paragraph, force_ltr=force_ltr)
@@ -145,57 +164,103 @@ def markdown_to_docx(markdown: str, *, title: str, rtl: bool) -> bytes:
     def write_cell(cell, text: str) -> None:
         cell.text = ""
         paragraph = cell.paragraphs[0]
+        apply_paragraph_style(paragraph, resolve("table_text"))
         write_text(paragraph, text)
 
-    for block in _parse_blocks(body_md):
-        kind = block[0]
-        if kind == "h":
-            _, level, text = block
-            p = doc.add_heading("", level=min(max(level, 1), 9))
-            write_text(p, _plain(text))
-        elif kind == "p":
-            p = doc.add_paragraph()
-            write_text(p, _plain(block[1]))
-        elif kind == "pre":
-            p = doc.add_paragraph()
-            write_text(p, block[1], force_ltr=True)
-        elif kind == "ul":
-            for item, level in block[1]:
-                p = doc.add_paragraph(style="List Bullet")
-                if level:
-                    p.paragraph_format.left_indent = Pt(18 * min(level, 4))
-                write_text(p, _plain(item))
-        elif kind == "ol":
-            for item in block[1]:
-                p = doc.add_paragraph(style="List Number")
-                write_text(p, _plain(item))
-        elif kind == "table":
-            rows = block[1]
-            if not rows:
-                continue
-            cols = max((len(r) for r in rows), default=1)
-            table = doc.add_table(rows=len(rows), cols=cols)
-            table.style = "Table Grid"
-            if rtl:
-                _mark_table_rtl(table)
-            for ri, row in enumerate(rows):
-                for ci in range(cols):
-                    cell_text = row[ci] if ci < len(row) else ""
-                    write_cell(table.rows[ri].cells[ci], _plain(cell_text))
-        elif kind == "img":
-            _, alt, src = block
-            path = Path(src)
-            if path.is_file():
-                try:
-                    doc.add_picture(str(path))
+    def add_styled_paragraph(role: str):
+        style_name = resolve(role)
+        if style_name:
+            try:
+                return doc.add_paragraph(style=style_name)
+            except Exception:
+                pass
+        return doc.add_paragraph()
+
+    try:
+        for block in _parse_blocks(body_md):
+            kind = block[0]
+            if kind == "h":
+                _, level, text = block
+                body_para_index = 0
+                level = min(max(level, 1), 9)
+                role = f"h{min(level, 6)}"
+                style_name = resolve(role)
+                if style_name:
+                    p = add_styled_paragraph(role)
+                elif using_template:
+                    p = doc.add_paragraph()
+                    apply_paragraph_style(p, resolve("h1") if level == 1 else None)
+                else:
+                    p = doc.add_heading("", level=level)
+                write_text(p, _plain(text))
+            elif kind == "p":
+                role = "p" if body_para_index == 0 else "p_cont"
+                body_para_index += 1
+                p = add_styled_paragraph(role)
+                write_text(p, _plain(block[1]))
+            elif kind == "pre":
+                p = add_styled_paragraph("pre")
+                write_text(p, block[1], force_ltr=True)
+            elif kind == "ul":
+                for item, level in block[1]:
+                    style_name = resolve("list_bullet")
+                    if style_name:
+                        p = doc.add_paragraph(style=style_name)
+                    else:
+                        p = doc.add_paragraph(style="List Bullet")
+                    if level:
+                        p.paragraph_format.left_indent = Pt(18 * min(level, 4))
+                    write_text(p, _plain(item))
+            elif kind == "ol":
+                for item in block[1]:
+                    style_name = resolve("list_number")
+                    if style_name:
+                        p = doc.add_paragraph(style=style_name)
+                    else:
+                        p = doc.add_paragraph(style="List Number")
+                    write_text(p, _plain(item))
+            elif kind == "table":
+                rows = block[1]
+                if not rows:
                     continue
-                except Exception:
-                    pass
-            p = doc.add_paragraph()
-            write_text(p, alt or src)
-    buf = BytesIO()
-    doc.save(buf)
-    return buf.getvalue()
+                cols = max((len(r) for r in rows), default=1)
+                table = doc.add_table(rows=len(rows), cols=cols)
+                table_style = resolve("table")
+                if table_style:
+                    try:
+                        table.style = table_style
+                    except Exception:
+                        table.style = "Table Grid"
+                else:
+                    table.style = "Table Grid"
+                if rtl and not using_template:
+                    _mark_table_rtl(table)
+                elif rtl and using_template:
+                    _mark_table_rtl(table)
+                for ri, row in enumerate(rows):
+                    for ci in range(cols):
+                        cell_text = row[ci] if ci < len(row) else ""
+                        write_cell(table.rows[ri].cells[ci], _plain(cell_text))
+            elif kind == "img":
+                _, alt, src = block
+                path = Path(src)
+                if path.is_file():
+                    try:
+                        doc.add_picture(str(path))
+                        continue
+                    except Exception:
+                        pass
+                p = add_styled_paragraph("caption")
+                write_text(p, alt or src)
+        buf = BytesIO()
+        doc.save(buf)
+        return buf.getvalue()
+    finally:
+        if tmp_path is not None:
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
 
 
 def split_bidi_runs(text: str) -> list[tuple[str, bool]]:

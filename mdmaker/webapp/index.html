@@ -267,6 +267,16 @@
         <label class="opt"><input type="checkbox" class="fmt" value="docx" checked> Word .docx — <span class="en">output/docx</span></label>
         <label class="opt"><input type="checkbox" class="fmt" value="pdf" checked> PDF — <span class="en">output/pdf</span></label>
         <label class="opt"><input type="checkbox" class="fmt" value="txt"> TXT — <span class="en">output/txt</span></label>
+        <div id="docx-template-box" style="margin:0.6rem 0 0.2rem;padding:0.55rem 0.7rem;border:1px dashed #9aa7b5;border-radius:8px">
+          <p style="margin:0 0 0.35rem"><strong>قالب Word (اختیاری)</strong> / <span class="en">Optional Word template for .docx</span></p>
+          <p class="en" style="margin:0 0 0.45rem;font-size:0.92rem;opacity:0.9">Margins, headers/footers, and styles are taken from this file. Body is filled from Markdown.</p>
+          <input id="file-template" type="file" accept=".docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword" hidden>
+          <div class="row">
+            <button id="pick-template" class="ghost" type="button">انتخاب قالب / Choose template</button>
+            <button id="clear-template" class="ghost" type="button">حذف قالب / Clear</button>
+          </div>
+          <div id="template-name" style="margin-top:0.35rem;font-size:0.92rem"></div>
+        </div>
         <label class="opt"><input type="checkbox" id="overwrite-md"> بازنویسی فایل هم‌نام / <span class="en">overwrite same name</span></label>
         <div class="row">
           <button id="go-md" type="button" disabled>خروجی / Export</button>
@@ -287,6 +297,37 @@
     const resultEl = document.getElementById("result");
     let chosen = [];
     let chosenMd = [];
+    let chosenTemplate = null;
+
+    function syncTemplateBox() {
+      const docxOn = [...document.querySelectorAll(".fmt")].some((el) => el.value === "docx" && el.checked);
+      const box = document.getElementById("docx-template-box");
+      if (box) box.style.display = docxOn ? "" : "none";
+    }
+    document.querySelectorAll(".fmt").forEach((el) => el.addEventListener("change", syncTemplateBox));
+    syncTemplateBox();
+
+    document.getElementById("pick-template").addEventListener("click", () => {
+      document.getElementById("file-template").click();
+    });
+    document.getElementById("clear-template").addEventListener("click", () => {
+      chosenTemplate = null;
+      document.getElementById("file-template").value = "";
+      document.getElementById("template-name").textContent = "";
+    });
+    document.getElementById("file-template").addEventListener("change", () => {
+      const files = [...document.getElementById("file-template").files];
+      const file = files[0];
+      if (!file) return;
+      const name = (file.name || "").toLowerCase();
+      if (!name.endsWith(".docx") && !name.endsWith(".doc")) {
+        document.getElementById("template-name").textContent = "فقط .docx یا .doc / .docx or .doc only";
+        chosenTemplate = null;
+        return;
+      }
+      chosenTemplate = file;
+      document.getElementById("template-name").textContent = "قالب: " + file.name;
+    });
 
     document.querySelectorAll(".tab").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -666,6 +707,9 @@
       chosenMd.forEach((file) => data.append("file", file, file.name));
       data.append("formats", formats.join(","));
       data.append("overwrite", document.getElementById("overwrite-md").checked);
+      if (formats.includes("docx") && chosenTemplate) {
+        data.append("template", chosenTemplate, chosenTemplate.name);
+      }
       try {
         const res = await fetch("/api/from-md", { method: "POST", body: data });
         const json = await res.json();
