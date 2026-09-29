@@ -30,11 +30,34 @@
       margin: 0 auto;
       padding: 2.2rem 1.2rem 3rem;
     }
-    h1 {
-      margin: 0 0 0.25rem;
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.25rem;
+    }
+    .topbar h1 {
+      margin: 0;
       font-size: 1.7rem;
       font-weight: 650;
     }
+    .brand-fa {
+      font-weight: 500;
+      color: var(--muted);
+      margin-inline-start: 0.35rem;
+    }
+    #lang-toggle {
+      flex-shrink: 0;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.45rem 0.85rem;
+      font-weight: 650;
+      min-width: 4.5rem;
+    }
+    #lang-toggle:hover { border-color: var(--accent); }
     .sub {
       color: var(--muted);
       margin: 0 0 1.6rem;
@@ -47,7 +70,7 @@
       padding: 1.1rem 1.15rem;
       margin-bottom: 1rem;
     }
-    #drop {
+    #drop, #drop-md {
       border: 1.5px dashed #4a6278;
       background: var(--drop);
       border-radius: 12px;
@@ -56,14 +79,15 @@
       cursor: pointer;
       transition: border-color .15s, background .15s;
     }
-    #drop.over, #drop:hover {
+    #drop.over, #drop:hover,
+    #drop-md.over, #drop-md:hover {
       border-color: var(--accent);
       background: #1d3348;
     }
-    #drop strong { display: block; font-size: 1.05rem; margin-bottom: 0.35rem; }
-    #drop span { color: var(--muted); font-size: 0.92rem; }
-    #filename { margin-top: 0.7rem; color: var(--ok); min-height: 1.2rem; }
-    #filelist {
+    #drop strong, #drop-md strong { display: block; font-size: 1.05rem; margin-bottom: 0.35rem; }
+    #drop span, #drop-md span { color: var(--muted); font-size: 0.92rem; }
+    #filename, #filename-md { margin-top: 0.7rem; color: var(--ok); min-height: 1.2rem; }
+    #filelist, #filelist-md {
       margin: 0.55rem 0 0;
       padding: 0;
       max-height: 9rem;
@@ -72,7 +96,7 @@
       font-size: 0.86rem;
       color: var(--ok);
     }
-    #filelist li { list-style: none; padding: 0.12rem 0; word-break: break-all; }
+    #filelist li, #filelist-md li { list-style: none; padding: 0.12rem 0; word-break: break-all; }
     label.opt {
       display: flex;
       gap: 0.7rem;
@@ -97,13 +121,13 @@
       padding: 0.7rem 1.15rem;
       cursor: pointer;
     }
-    #go {
+    #go, #go-md {
       background: var(--accent);
       color: #061018;
       font-weight: 700;
       min-width: 10rem;
     }
-    #go:disabled { opacity: 0.45; cursor: not-allowed; }
+    #go:disabled, #go-md:disabled { opacity: 0.45; cursor: not-allowed; }
     .ghost {
       background: transparent;
       color: var(--text);
@@ -111,9 +135,9 @@
     }
     details { margin-top: 0.4rem; color: var(--muted); }
     details summary { cursor: pointer; margin-bottom: 0.4rem; }
-    #status { min-height: 1.4rem; margin: 0.4rem 0 0; }
-    #status.err { color: var(--bad); }
-    #status.ok { color: var(--ok); }
+    #status, #status-md { min-height: 1.4rem; margin: 0.4rem 0 0; }
+    #status.err, #status-md.err { color: var(--bad); }
+    #status.ok, #status-md.ok { color: var(--ok); }
     .outputs { display: grid; gap: 0.8rem; }
     .out h3 { margin: 0 0 0.45rem; font-size: 1rem; }
     .path { color: var(--muted); font-size: 0.82rem; word-break: break-all; margin-bottom: 0.5rem; }
@@ -127,11 +151,12 @@
       padding: 0.7rem;
       font-size: 0.78rem;
       white-space: pre-wrap;
-      direction: rtl;
     }
+    html[dir="rtl"] pre { direction: rtl; }
+    html[dir="ltr"] pre { direction: ltr; }
     .warn { color: #e0c36a; font-size: 0.9rem; }
     p.err { color: var(--bad); margin: 0.4rem 0 0; }
-    .en { direction: ltr; unicode-bidi: isolate; }
+    .section-label { margin: 1rem 0 0.3rem; }
     .tabs {
       display: flex;
       gap: 0.4rem;
@@ -152,94 +177,72 @@
       color: #061018;
     }
     .panel[hidden] { display: none !important; }
-    #drop-md {
-      border: 1.5px dashed #4a6278;
-      background: var(--drop);
-      border-radius: 12px;
-      padding: 1.6rem 1rem;
-      text-align: center;
-      cursor: pointer;
+    #docx-template-box {
+      margin: 0.6rem 0 0.2rem;
+      padding: 0.55rem 0.7rem;
+      border: 1px dashed #9aa7b5;
+      border-radius: 8px;
     }
-    #drop-md.over, #drop-md:hover {
-      border-color: var(--accent);
-      background: #1d3348;
+    #docx-template-box .hint {
+      margin: 0 0 0.45rem;
+      font-size: 0.92rem;
+      opacity: 0.9;
+      color: var(--muted);
     }
-    #drop-md strong { display: block; font-size: 1.05rem; margin-bottom: 0.35rem; }
-    #drop-md span { color: var(--muted); font-size: 0.92rem; }
-    #filename-md { margin-top: 0.7rem; color: var(--ok); min-height: 1.2rem; }
-    #filelist-md {
-      margin: 0.55rem 0 0;
-      padding: 0;
-      max-height: 9rem;
-      overflow: auto;
-      text-align: start;
-      font-size: 0.86rem;
-      color: var(--ok);
-    }
-    #filelist-md li { list-style: none; padding: 0.12rem 0; word-break: break-all; }
-    #go-md {
-      background: var(--accent);
-      color: #061018;
-      font-weight: 700;
-      min-width: 10rem;
-    }
-    #go-md:disabled { opacity: 0.45; cursor: not-allowed; }
-    #status-md { min-height: 1.4rem; margin: 0.4rem 0 0; }
-    #status-md.err { color: var(--bad); }
-    #status-md.ok { color: var(--ok); }
+    #template-name { margin-top: 0.35rem; font-size: 0.92rem; }
   </style>
 </head>
 <body>
   <main>
-    <h1>EbaratNeshan <span style="font-weight:500;color:var(--muted)">عبارت‌نشان</span></h1>
-    <p class="sub">
-      سند را به Markdown تبدیل کنید یا Markdown را به فایل‌های دیگر ببرید — روی همین رایانه.
-      <span class="en">To Markdown or from Markdown. Stays on this computer.</span>
-    </p>
+    <div class="topbar">
+      <h1>EbaratNeshan <span class="brand-fa" data-i18n="brandFa">عبارت‌نشان</span></h1>
+      <button id="lang-toggle" type="button" aria-label="Language">EN</button>
+    </div>
+    <p class="sub" data-i18n="subtitle">سند را به Markdown تبدیل کنید یا Markdown را به فایل‌های دیگر ببرید — روی همین رایانه.</p>
 
     <div class="tabs" role="tablist">
-      <button class="tab on" type="button" id="tab-to" data-tab="to-md">به Markdown / To MD</button>
-      <button class="tab" type="button" id="tab-from" data-tab="from-md">از Markdown / From MD</button>
+      <button class="tab on" type="button" id="tab-to" data-tab="to-md" data-i18n="tabToMd">به Markdown</button>
+      <button class="tab" type="button" id="tab-from" data-tab="from-md" data-i18n="tabFromMd">از Markdown</button>
     </div>
 
     <div id="panel-to-md" class="panel">
     <div class="card">
       <div id="drop">
-        <strong>فایل‌ها یا پوشه را اینجا بکشید</strong>
-        <span class="en">Drop PDF / DOCX files or a folder, or use the buttons below</span>
+        <strong data-i18n="dropTitle">فایل‌ها یا پوشه را اینجا بکشید</strong>
+        <span data-i18n="dropHint">فایل‌های PDF / DOCX یا یک پوشه را رها کنید، یا از دکمه‌های زیر استفاده کنید</span>
         <div id="filename"></div>
         <ul id="filelist"></ul>
       </div>
       <input id="file" type="file" multiple accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
       <input id="folder" type="file" webkitdirectory directory hidden>
       <div class="row">
-        <button id="pick-files" class="ghost" type="button">انتخاب فایل‌ها / Choose files</button>
-        <button id="pick-folder" class="ghost" type="button">انتخاب پوشه / Choose folder</button>
-        <button id="clear" class="ghost" type="button">پاک کردن / Clear</button>
+        <button id="pick-files" class="ghost" type="button" data-i18n="chooseFiles">انتخاب فایل‌ها</button>
+        <button id="pick-folder" class="ghost" type="button" data-i18n="chooseFolder">انتخاب پوشه</button>
+        <button id="clear" class="ghost" type="button" data-i18n="clear">پاک کردن</button>
       </div>
 
-      <p style="margin:1rem 0 0.3rem">خروجی / <span class="en">Purpose</span></p>
+      <p class="section-label" data-i18n="purpose">خروجی</p>
       <label class="opt"><input type="radio" name="purpose" value="llm" checked>
-        <span>LLM — برای مدل زبانی<br><small class="en">Headings, lists, compact Markdown for models</small></span>
+        <span><span data-i18n="purposeLlm">LLM — برای مدل زبانی</span><br><small data-i18n="purposeLlmHint">سرتیتر، فهرست و Markdown فشرده برای مدل‌ها</small></span>
       </label>
       <label class="opt"><input type="radio" name="purpose" value="reading">
-        <span>خواندن — برای انسان<br><small class="en">Reading copy with the same recovered Persian text</small></span>
+        <span><span data-i18n="purposeReading">خواندن — برای انسان</span><br><small data-i18n="purposeReadingHint">نسخه خواندنی با همان متن فارسی بازیابی‌شده</small></span>
       </label>
       <label class="opt"><input type="radio" name="purpose" value="all">
-        <span>هر دو / <span class="en">Both</span></span>
+        <span data-i18n="purposeBoth">هر دو</span>
       </label>
 
       <details>
-        <summary>گزینه‌های بیشتر / <span class="en">Advanced</span></summary>
-        <label class="opt"><input type="checkbox" id="table_images" checked> تصویر جدول / <span class="en">table screenshots</span></label>
-        <label class="opt"><input type="checkbox" id="figure_images" checked> تصویر شکل / <span class="en">figure screenshots</span></label>
-        <label class="opt"><input type="checkbox" id="overwrite"> بازنویسی پوشه / <span class="en">overwrite existing folder</span></label>
-        <label class="opt"><input type="checkbox" id="persian_digits"> ارقام فارسی / <span class="en">Persian digits 1→۱</span></label>
-        <label class="opt"><input type="checkbox" id="split_llm"> تقسیم LLM به بخش‌ها / <span class="en">split LLM by H1</span></label>
+        <summary data-i18n="advanced">گزینه‌های بیشتر</summary>
+        <label class="opt"><input type="checkbox" id="table_images" checked> <span data-i18n="optTableImages">تصویر جدول</span></label>
+        <label class="opt"><input type="checkbox" id="figure_images" checked> <span data-i18n="optFigureImages">تصویر شکل</span></label>
+        <label class="opt"><input type="checkbox" id="overwrite"> <span data-i18n="optOverwrite">بازنویسی پوشه</span></label>
+        <label class="opt"><input type="checkbox" id="persian_digits"> <span data-i18n="optPersianDigits">ارقام فارسی (1→۱)</span></label>
+        <label class="opt"><input type="checkbox" id="split_llm"> <span data-i18n="optSplitLlm">تقسیم LLM به بخش‌ها</span></label>
       </details>
 
       <div class="row">
-        <button id="go" type="button" disabled>تبدیل / Convert</button>
+        <button id="go" type="button" disabled data-i18n="convert">تبدیل</button>
       </div>
       <p id="status"></p>
     </div>
@@ -250,36 +253,36 @@
     <div id="panel-from-md" class="panel" hidden>
       <div class="card">
         <div id="drop-md">
-          <strong>فایل Markdown را اینجا بکشید</strong>
-          <span class="en">Drop .md files or a folder, or use the buttons below</span>
+          <strong data-i18n="dropMdTitle">فایل Markdown را اینجا بکشید</strong>
+          <span data-i18n="dropMdHint">فایل‌های .md یا یک پوشه را رها کنید، یا از دکمه‌های زیر استفاده کنید</span>
           <div id="filename-md"></div>
           <ul id="filelist-md"></ul>
         </div>
         <input id="file-md" type="file" multiple accept=".md,text/markdown" hidden>
         <input id="folder-md" type="file" webkitdirectory directory hidden>
         <div class="row">
-          <button id="pick-files-md" class="ghost" type="button">انتخاب فایل‌ها / Choose files</button>
-          <button id="pick-folder-md" class="ghost" type="button">انتخاب پوشه / Choose folder</button>
-          <button id="clear-md" class="ghost" type="button">پاک کردن / Clear</button>
+          <button id="pick-files-md" class="ghost" type="button" data-i18n="chooseFiles">انتخاب فایل‌ها</button>
+          <button id="pick-folder-md" class="ghost" type="button" data-i18n="chooseFolder">انتخاب پوشه</button>
+          <button id="clear-md" class="ghost" type="button" data-i18n="clear">پاک کردن</button>
         </div>
-        <p style="margin:1rem 0 0.3rem">قالب خروجی / <span class="en">Formats (saved under output/html, output/docx, …)</span></p>
-        <label class="opt"><input type="checkbox" class="fmt" value="html" checked> HTML — <span class="en">output/html</span></label>
-        <label class="opt"><input type="checkbox" class="fmt" value="docx" checked> Word .docx — <span class="en">output/docx</span></label>
-        <label class="opt"><input type="checkbox" class="fmt" value="pdf" checked> PDF — <span class="en">output/pdf</span></label>
-        <label class="opt"><input type="checkbox" class="fmt" value="txt"> TXT — <span class="en">output/txt</span></label>
-        <div id="docx-template-box" style="margin:0.6rem 0 0.2rem;padding:0.55rem 0.7rem;border:1px dashed #9aa7b5;border-radius:8px">
-          <p style="margin:0 0 0.35rem"><strong>قالب Word (اختیاری)</strong> / <span class="en">Optional Word template for .docx</span></p>
-          <p class="en" style="margin:0 0 0.45rem;font-size:0.92rem;opacity:0.9">Margins, headers/footers, and styles are taken from this file. Body is filled from Markdown.</p>
+        <p class="section-label" data-i18n="formats">قالب خروجی</p>
+        <label class="opt"><input type="checkbox" class="fmt" value="html" checked> HTML — <span class="en-path">output/html</span></label>
+        <label class="opt"><input type="checkbox" class="fmt" value="docx" checked> Word .docx — <span class="en-path">output/docx</span></label>
+        <label class="opt"><input type="checkbox" class="fmt" value="pdf" checked> PDF — <span class="en-path">output/pdf</span></label>
+        <label class="opt"><input type="checkbox" class="fmt" value="txt"> TXT — <span class="en-path">output/txt</span></label>
+        <div id="docx-template-box">
+          <p style="margin:0 0 0.35rem"><strong data-i18n="templateTitle">قالب Word (اختیاری)</strong></p>
+          <p class="hint" data-i18n="templateHint">حاشیه‌ها، سرصفحه/پاصفحه و سبک‌ها از این فایل گرفته می‌شوند. متن بدنه از Markdown پر می‌شود.</p>
           <input id="file-template" type="file" accept=".docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword" hidden>
           <div class="row">
-            <button id="pick-template" class="ghost" type="button">انتخاب قالب / Choose template</button>
-            <button id="clear-template" class="ghost" type="button">حذف قالب / Clear</button>
+            <button id="pick-template" class="ghost" type="button" data-i18n="chooseTemplate">انتخاب قالب</button>
+            <button id="clear-template" class="ghost" type="button" data-i18n="clearTemplate">حذف قالب</button>
           </div>
-          <div id="template-name" style="margin-top:0.35rem;font-size:0.92rem"></div>
+          <div id="template-name"></div>
         </div>
-        <label class="opt"><input type="checkbox" id="overwrite-md"> بازنویسی فایل هم‌نام / <span class="en">overwrite same name</span></label>
+        <label class="opt"><input type="checkbox" id="overwrite-md"> <span data-i18n="optOverwriteFile">بازنویسی فایل هم‌نام</span></label>
         <div class="row">
-          <button id="go-md" type="button" disabled>خروجی / Export</button>
+          <button id="go-md" type="button" disabled data-i18n="export">خروجی</button>
         </div>
         <p id="status-md"></p>
       </div>
@@ -287,6 +290,155 @@
     </div>
   </main>
   <script>
+    const I18N = {
+      fa: {
+        brandFa: "عبارت‌نشان",
+        subtitle: "سند را به Markdown تبدیل کنید یا Markdown را به فایل‌های دیگر ببرید — روی همین رایانه.",
+        tabToMd: "به Markdown",
+        tabFromMd: "از Markdown",
+        dropTitle: "فایل‌ها یا پوشه را اینجا بکشید",
+        dropHint: "فایل‌های PDF / DOCX یا یک پوشه را رها کنید، یا از دکمه‌های زیر استفاده کنید",
+        dropMdTitle: "فایل Markdown را اینجا بکشید",
+        dropMdHint: "فایل‌های .md یا یک پوشه را رها کنید، یا از دکمه‌های زیر استفاده کنید",
+        chooseFiles: "انتخاب فایل‌ها",
+        chooseFolder: "انتخاب پوشه",
+        clear: "پاک کردن",
+        purpose: "خروجی",
+        purposeLlm: "LLM — برای مدل زبانی",
+        purposeLlmHint: "سرتیتر، فهرست و Markdown فشرده برای مدل‌ها",
+        purposeReading: "خواندن — برای انسان",
+        purposeReadingHint: "نسخه خواندنی با همان متن فارسی بازیابی‌شده",
+        purposeBoth: "هر دو",
+        advanced: "گزینه‌های بیشتر",
+        optTableImages: "تصویر جدول",
+        optFigureImages: "تصویر شکل",
+        optOverwrite: "بازنویسی پوشه",
+        optPersianDigits: "ارقام فارسی (1→۱)",
+        optSplitLlm: "تقسیم LLM به بخش‌ها",
+        convert: "تبدیل",
+        formats: "قالب خروجی",
+        templateTitle: "قالب Word (اختیاری)",
+        templateHint: "حاشیه‌ها، سرصفحه/پاصفحه و سبک‌ها از این فایل گرفته می‌شوند. متن بدنه از Markdown پر می‌شود.",
+        chooseTemplate: "انتخاب قالب",
+        clearTemplate: "حذف قالب",
+        optOverwriteFile: "بازنویسی فایل هم‌نام",
+        export: "خروجی",
+        onlyPdfDocx: "فقط PDF و DOCX.",
+        noPdfDocxFolder: "در این پوشه PDF یا DOCX نبود.",
+        onlyMd: "فقط فایل .md",
+        noMdFolder: "در این پوشه Markdown نبود.",
+        templateOnly: "فقط .docx یا .doc",
+        templateLabel: "قالب: ",
+        converting: (i, total, name) => `در حال تبدیل ${i} از ${total}: ${name}`,
+        doneSaved: "تمام شد. فایل‌ها در پوشه output ذخیره شدند.",
+        donePartial: (ok, fail) => `تمام شد: ${ok} موفق، ${fail} ناموفق.`,
+        convertFailed: "تبدیل ناموفق بود.",
+        downloadMd: "دانلود .md",
+        openFolder: "باز کردن پوشه",
+        chooseFormat: "حداقل یک قالب را انتخاب کنید.",
+        exporting: "در حال خروجی…",
+        exportDone: (n) => `تمام شد: ${n} فایل در output/`,
+        exportFailed: "خروجی ناموفق بود.",
+        openFolderNamed: (name) => "باز کردن " + name,
+        serverError: (err) => "خطای سرور: " + err,
+        allowPopups: "برای ذخیره PDF پنجره‌های بازشو را مجاز کنید، یا از دکمه HTML و Print استفاده کنید.",
+        filesCount: (n) => `${n} فایل`,
+        llmTitle: "Markdown برای LLM",
+        readingTitle: "Markdown خواندنی",
+        langBtn: "EN",
+        langAria: "English",
+      },
+      en: {
+        brandFa: "",
+        subtitle: "Convert documents to Markdown, or Markdown to other formats — on this computer.",
+        tabToMd: "To Markdown",
+        tabFromMd: "From Markdown",
+        dropTitle: "Drop files or a folder here",
+        dropHint: "Drop PDF / DOCX files or a folder, or use the buttons below",
+        dropMdTitle: "Drop Markdown files here",
+        dropMdHint: "Drop .md files or a folder, or use the buttons below",
+        chooseFiles: "Choose files",
+        chooseFolder: "Choose folder",
+        clear: "Clear",
+        purpose: "Purpose",
+        purposeLlm: "LLM — for language models",
+        purposeLlmHint: "Headings, lists, compact Markdown for models",
+        purposeReading: "Reading — for humans",
+        purposeReadingHint: "Reading copy with the same recovered Persian text",
+        purposeBoth: "Both",
+        advanced: "Advanced",
+        optTableImages: "Table screenshots",
+        optFigureImages: "Figure screenshots",
+        optOverwrite: "Overwrite existing folder",
+        optPersianDigits: "Persian digits (1→۱)",
+        optSplitLlm: "Split LLM by H1",
+        convert: "Convert",
+        formats: "Output formats",
+        templateTitle: "Word template (optional)",
+        templateHint: "Margins, headers/footers, and styles are taken from this file. Body is filled from Markdown.",
+        chooseTemplate: "Choose template",
+        clearTemplate: "Clear template",
+        optOverwriteFile: "Overwrite same name",
+        export: "Export",
+        onlyPdfDocx: "Only PDF and DOCX.",
+        noPdfDocxFolder: "No PDF or DOCX in that folder.",
+        onlyMd: "Only .md files.",
+        noMdFolder: "No .md files in that folder.",
+        templateOnly: ".docx or .doc only",
+        templateLabel: "Template: ",
+        converting: (i, total, name) => `Converting ${i} of ${total}: ${name}`,
+        doneSaved: "Done. Files saved under the output folder.",
+        donePartial: (ok, fail) => `Done: ${ok} ok, ${fail} failed.`,
+        convertFailed: "Conversion failed.",
+        downloadMd: "Download .md",
+        openFolder: "Open folder",
+        chooseFormat: "Choose at least one format.",
+        exporting: "Exporting…",
+        exportDone: (n) => `Done: ${n} file(s) under output/`,
+        exportFailed: "Export failed.",
+        openFolderNamed: (name) => "Open " + name,
+        serverError: (err) => "Server error: " + err,
+        allowPopups: "Allow pop-ups to save PDF, or use the HTML button and Print.",
+        filesCount: (n) => `${n} files`,
+        llmTitle: "LLM Markdown",
+        readingTitle: "Reading Markdown",
+        langBtn: "FA",
+        langAria: "فارسی",
+      }
+    };
+
+    let lang = localStorage.getItem("ebarat-lang") === "en" ? "en" : "fa";
+
+    function t(key, ...args) {
+      const val = I18N[lang][key];
+      return typeof val === "function" ? val(...args) : val;
+    }
+
+    function applyLang() {
+      const root = document.documentElement;
+      root.lang = lang;
+      root.dir = lang === "fa" ? "rtl" : "ltr";
+      localStorage.setItem("ebarat-lang", lang);
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.getAttribute("data-i18n");
+        const val = t(key);
+        if (val === undefined) return;
+        el.textContent = val;
+        if (key === "brandFa") el.hidden = !val;
+      });
+      const btn = document.getElementById("lang-toggle");
+      btn.textContent = t("langBtn");
+      btn.setAttribute("aria-label", t("langAria"));
+      if (chosenTemplate) {
+        document.getElementById("template-name").textContent = t("templateLabel") + chosenTemplate.name;
+      }
+    }
+
+    document.getElementById("lang-toggle").addEventListener("click", () => {
+      lang = lang === "fa" ? "en" : "fa";
+      applyLang();
+    });
+
     const drop = document.getElementById("drop");
     const fileInput = document.getElementById("file");
     const folderInput = document.getElementById("folder");
@@ -321,12 +473,12 @@
       if (!file) return;
       const name = (file.name || "").toLowerCase();
       if (!name.endsWith(".docx") && !name.endsWith(".doc")) {
-        document.getElementById("template-name").textContent = "فقط .docx یا .doc / .docx or .doc only";
+        document.getElementById("template-name").textContent = t("templateOnly");
         chosenTemplate = null;
         return;
       }
       chosenTemplate = file;
-      document.getElementById("template-name").textContent = "قالب: " + file.name;
+      document.getElementById("template-name").textContent = t("templateLabel") + file.name;
     });
 
     document.querySelectorAll(".tab").forEach((btn) => {
@@ -357,23 +509,16 @@
         seen.add(key);
         docs.push(file);
       }
-      docs.sort((a, b) => label(a).localeCompare(label(b), "fa"));
+      docs.sort((a, b) => label(a).localeCompare(label(b), lang === "fa" ? "fa" : "en"));
       chosen = docs;
       fileListEl.innerHTML = "";
       if (!docs.length) {
         filenameEl.textContent = "";
         go.disabled = true;
-        setStatus(
-          skipped
-            ? "در این پوشه PDF یا DOCX نبود. / No PDF or DOCX in that folder."
-            : "فقط PDF و DOCX. / Only PDF and DOCX.",
-          true
-        );
+        setStatus(skipped ? t("noPdfDocxFolder") : t("onlyPdfDocx"), true);
         return;
       }
-      filenameEl.textContent = docs.length === 1
-        ? docs[0].name
-        : `${docs.length} files`;
+      filenameEl.textContent = docs.length === 1 ? docs[0].name : t("filesCount", docs.length);
       const shown = docs.slice(0, 12);
       shown.forEach((file) => {
         const li = document.createElement("li");
@@ -386,8 +531,7 @@
         fileListEl.appendChild(li);
       }
       go.disabled = false;
-      const extra = skipped ? `  ·  skipped ${skipped} other` : "";
-      setStatus(docs.length === 1 ? "" : `${docs.length} PDF/DOCX${extra}`);
+      setStatus(docs.length === 1 ? "" : `${docs.length} PDF/DOCX`);
     }
 
     function label(file) {
@@ -465,7 +609,7 @@
       let failCount = 0;
       for (let i = 0; i < total; i++) {
         const file = chosen[i];
-        setStatus(`در حال تبدیل ${i + 1} از ${total} / Converting ${i + 1} of ${total}: ${file.name}`);
+        setStatus(t("converting", i + 1, total, file.name));
         const data = new FormData();
         data.append("file", file, file.name);
         data.append("purpose", document.querySelector("input[name=purpose]:checked").value);
@@ -487,7 +631,7 @@
             failCount += 1;
             const err = document.createElement("p");
             err.className = "err";
-            err.textContent = json.error || "Conversion failed.";
+            err.textContent = json.error || t("convertFailed");
             heading.appendChild(err);
             continue;
           }
@@ -497,16 +641,16 @@
           failCount += 1;
           const msg = document.createElement("p");
           msg.className = "err";
-          msg.textContent = "Server error: " + err;
+          msg.textContent = t("serverError", err);
           heading.appendChild(msg);
         }
       }
       if (failCount && okCount) {
-        setStatus(`تمام شد: ${okCount} ok, ${failCount} failed.`, true);
+        setStatus(t("donePartial", okCount, failCount), true);
       } else if (failCount) {
-        setStatus("Conversion failed.", true);
+        setStatus(t("convertFailed"), true);
       } else {
-        setStatus("تمام شد. فایل‌ها در پوشه output ذخیره شدند.");
+        setStatus(t("doneSaved"));
       }
       go.disabled = false;
     });
@@ -524,7 +668,7 @@
         const card = document.createElement("div");
         card.className = "out";
         const title = document.createElement("h3");
-        title.textContent = out.purpose === "llm" ? "LLM Markdown" : "Reading Markdown";
+        title.textContent = out.purpose === "llm" ? t("llmTitle") : t("readingTitle");
         const path = document.createElement("div");
         path.className = "path";
         path.textContent = out.path;
@@ -533,19 +677,19 @@
         const dl = document.createElement("button");
         dl.className = "ghost";
         dl.type = "button";
-        dl.textContent = "دانلود .md / Download";
+        dl.textContent = t("downloadMd");
         dl.addEventListener("click", () => downloadMd(out.path, out.markdown));
         const openBtn = document.createElement("button");
         openBtn.className = "ghost";
         openBtn.type = "button";
-        openBtn.textContent = "باز کردن پوشه / Open folder";
+        openBtn.textContent = t("openFolder");
         openBtn.addEventListener("click", () => openFolder(out.folder));
         row.append(dl, openBtn);
-        [["html", "HTML"], ["docx", "Word .docx"], ["pdf", "PDF"], ["txt", "TXT"]].forEach(([fmt, label]) => {
+        [["html", "HTML"], ["docx", "Word .docx"], ["pdf", "PDF"], ["txt", "TXT"]].forEach(([fmt, labelText]) => {
           const btn = document.createElement("button");
           btn.className = "ghost";
           btn.type = "button";
-          btn.textContent = label;
+          btn.textContent = labelText;
           btn.addEventListener("click", () => exportFile(fmt, out));
           row.appendChild(btn);
         });
@@ -579,7 +723,7 @@
         })
       });
       if (!res.ok) {
-        let msg = "Export failed.";
+        let msg = t("exportFailed");
         try { msg = (await res.json()).error || msg; } catch (e) {}
         setStatus(msg, true);
         return;
@@ -591,7 +735,7 @@
         const html = await blob.text();
         const w = window.open("", "_blank");
         if (!w) {
-          setStatus("Allow pop-ups to save PDF, or use the HTML button and Print.", true);
+          setStatus(t("allowPopups"), true);
           return;
         }
         w.document.write(html);
@@ -628,19 +772,17 @@
         seen.add(key);
         docs.push(file);
       }
-      docs.sort((a, b) => label(a).localeCompare(label(b), "fa"));
+      docs.sort((a, b) => label(a).localeCompare(label(b), lang === "fa" ? "fa" : "en"));
       chosenMd = docs;
       fileListMd.innerHTML = "";
       if (!docs.length) {
         filenameMd.textContent = "";
         goMd.disabled = true;
-        statusMd.textContent = skipped
-          ? "در این پوشه Markdown نبود. / No .md files in that folder."
-          : "فقط فایل .md / Only .md files.";
+        statusMd.textContent = skipped ? t("noMdFolder") : t("onlyMd");
         statusMd.className = "err";
         return;
       }
-      filenameMd.textContent = docs.length === 1 ? docs[0].name : `${docs.length} files`;
+      filenameMd.textContent = docs.length === 1 ? docs[0].name : t("filesCount", docs.length);
       docs.slice(0, 12).forEach((file) => {
         const li = document.createElement("li");
         li.textContent = label(file);
@@ -695,13 +837,13 @@
       if (!chosenMd.length) return;
       const formats = [...document.querySelectorAll(".fmt:checked")].map((el) => el.value);
       if (!formats.length) {
-        statusMd.textContent = "حداقل یک قالب را انتخاب کنید. / Choose at least one format.";
+        statusMd.textContent = t("chooseFormat");
         statusMd.className = "err";
         return;
       }
       goMd.disabled = true;
       resultMd.innerHTML = "";
-      statusMd.textContent = "در حال خروجی… / Exporting…";
+      statusMd.textContent = t("exporting");
       statusMd.className = "ok";
       const data = new FormData();
       chosenMd.forEach((file) => data.append("file", file, file.name));
@@ -714,13 +856,13 @@
         const res = await fetch("/api/from-md", { method: "POST", body: data });
         const json = await res.json();
         if (!json.ok && !(json.outputs || []).length) {
-          statusMd.textContent = json.error || "Export failed.";
+          statusMd.textContent = json.error || t("exportFailed");
           statusMd.className = "err";
           goMd.disabled = false;
           return;
         }
         const n = (json.outputs || []).length;
-        statusMd.textContent = `تمام شد: ${n} file(s) under output/html, output/docx, …`;
+        statusMd.textContent = t("exportDone", n);
         statusMd.className = json.errors && json.errors.length ? "err" : "ok";
         const card = document.createElement("div");
         card.className = "card";
@@ -742,14 +884,14 @@
           const btn = document.createElement("button");
           btn.className = "ghost";
           btn.type = "button";
-          btn.textContent = "باز کردن " + folder.split(/[/\\]/).pop();
+          btn.textContent = t("openFolderNamed", folder.split(/[/\\]/).pop());
           btn.addEventListener("click", () => openFolder(folder));
           row.appendChild(btn);
         });
         card.appendChild(row);
         resultMd.appendChild(card);
       } catch (err) {
-        statusMd.textContent = "Server error: " + err;
+        statusMd.textContent = t("serverError", err);
         statusMd.className = "err";
       }
       goMd.disabled = false;
@@ -762,6 +904,8 @@
         body: JSON.stringify({ folder })
       });
     }
+
+    applyLang();
   </script>
 </body>
 </html>
