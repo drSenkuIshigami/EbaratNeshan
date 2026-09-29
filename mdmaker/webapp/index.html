@@ -1,28 +1,64 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EbaratNeshan</title>
+  <script>
+    try {
+      var savedTheme = localStorage.getItem("ebarat-theme");
+      if (savedTheme === "light" || savedTheme === "dark") {
+        document.documentElement.setAttribute("data-theme", savedTheme);
+      }
+    } catch (e) {}
+  </script>
   <style>
-    :root {
+    :root, [data-theme="dark"] {
       --bg: #0f1419;
+      --bg-glow: #1a3a55;
       --panel: #1a222c;
       --line: #2d3a48;
       --text: #e8eef4;
       --muted: #93a4b5;
       --accent: #3d9cf0;
-      --accent-dim: #1e4f7a;
+      --accent-ink: #061018;
       --ok: #3ecf8e;
       --bad: #e85d5d;
       --drop: #243040;
+      --drop-hover: #1d3348;
+      --opt-hover: #223040;
+      --pre: #101820;
+      --dash: #4a6278;
+      --warn: #e0c36a;
+      --template-dash: #9aa7b5;
     }
+    [data-theme="light"] {
+      --bg: #f4f7fb;
+      --bg-glow: #d6e8f7;
+      --panel: #ffffff;
+      --line: #c9d5e2;
+      --text: #1a2430;
+      --muted: #5a6b7c;
+      --accent: #1e78c8;
+      --accent-ink: #ffffff;
+      --ok: #1a9a5c;
+      --bad: #c93b3b;
+      --drop: #eaf1f8;
+      --drop-hover: #dceaf6;
+      --opt-hover: #eef4fa;
+      --pre: #f0f4f8;
+      --dash: #8aa0b5;
+      --warn: #9a7a1a;
+      --template-dash: #8aa0b5;
+    }
+    html { color-scheme: dark; }
+    html[data-theme="light"] { color-scheme: light; }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
       font-family: "Segoe UI", Tahoma, "Noto Naskh Arabic", "Arial", sans-serif;
-      background: radial-gradient(1200px 600px at 80% -10%, #1a3a55 0%, var(--bg) 55%);
+      background: radial-gradient(1200px 600px at 80% -10%, var(--bg-glow) 0%, var(--bg) 55%);
       color: var(--text);
     }
     main {
@@ -47,7 +83,12 @@
       color: var(--muted);
       margin-inline-start: 0.35rem;
     }
-    #lang-toggle {
+    .top-actions {
+      display: flex;
+      gap: 0.45rem;
+      flex-shrink: 0;
+    }
+    #lang-toggle, #theme-toggle {
       flex-shrink: 0;
       background: transparent;
       color: var(--text);
@@ -57,7 +98,7 @@
       font-weight: 650;
       min-width: 4.5rem;
     }
-    #lang-toggle:hover { border-color: var(--accent); }
+    #lang-toggle:hover, #theme-toggle:hover { border-color: var(--accent); }
     .sub {
       color: var(--muted);
       margin: 0 0 1.6rem;
@@ -71,7 +112,7 @@
       margin-bottom: 1rem;
     }
     #drop, #drop-md {
-      border: 1.5px dashed #4a6278;
+      border: 1.5px dashed var(--dash);
       background: var(--drop);
       border-radius: 12px;
       padding: 1.6rem 1rem;
@@ -82,7 +123,7 @@
     #drop.over, #drop:hover,
     #drop-md.over, #drop-md:hover {
       border-color: var(--accent);
-      background: #1d3348;
+      background: var(--drop-hover);
     }
     #drop strong, #drop-md strong { display: block; font-size: 1.05rem; margin-bottom: 0.35rem; }
     #drop span, #drop-md span { color: var(--muted); font-size: 0.92rem; }
@@ -105,7 +146,7 @@
       border-radius: 8px;
       cursor: pointer;
     }
-    label.opt:hover { background: #223040; }
+    label.opt:hover { background: var(--opt-hover); }
     label.opt input { margin-top: 0.28rem; accent-color: var(--accent); }
     label.opt small { display: block; color: var(--muted); }
     .row {
@@ -123,7 +164,7 @@
     }
     #go, #go-md {
       background: var(--accent);
-      color: #061018;
+      color: var(--accent-ink);
       font-weight: 700;
       min-width: 10rem;
     }
@@ -145,7 +186,7 @@
       margin: 0.6rem 0 0;
       max-height: 280px;
       overflow: auto;
-      background: #101820;
+      background: var(--pre);
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 0.7rem;
@@ -154,7 +195,7 @@
     }
     html[dir="rtl"] pre { direction: rtl; }
     html[dir="ltr"] pre { direction: ltr; }
-    .warn { color: #e0c36a; font-size: 0.9rem; }
+    .warn { color: var(--warn); font-size: 0.9rem; }
     p.err { color: var(--bad); margin: 0.4rem 0 0; }
     .section-label { margin: 1rem 0 0.3rem; }
     .tabs {
@@ -174,13 +215,13 @@
     }
     .tab.on {
       background: var(--accent);
-      color: #061018;
+      color: var(--accent-ink);
     }
     .panel[hidden] { display: none !important; }
     #docx-template-box {
       margin: 0.6rem 0 0.2rem;
       padding: 0.55rem 0.7rem;
-      border: 1px dashed #9aa7b5;
+      border: 1px dashed var(--template-dash);
       border-radius: 8px;
     }
     #docx-template-box .hint {
@@ -196,7 +237,10 @@
   <main>
     <div class="topbar">
       <h1>EbaratNeshan <span class="brand-fa" data-i18n="brandFa">عبارت‌نشان</span></h1>
-      <button id="lang-toggle" type="button" aria-label="Language">EN</button>
+      <div class="top-actions">
+        <button id="theme-toggle" type="button" aria-label="Theme">روز</button>
+        <button id="lang-toggle" type="button" aria-label="Language">EN</button>
+      </div>
     </div>
     <p class="sub" data-i18n="subtitle">سند را به Markdown تبدیل کنید یا Markdown را به فایل‌های دیگر ببرید — روی همین رایانه.</p>
 
@@ -347,6 +391,10 @@
         readingTitle: "Markdown خواندنی",
         langBtn: "EN",
         langAria: "English",
+        themeBtnDay: "روز",
+        themeBtnNight: "شب",
+        themeAriaDay: "حالت روز",
+        themeAriaNight: "حالت شب",
       },
       en: {
         brandFa: "",
@@ -404,14 +452,28 @@
         readingTitle: "Reading Markdown",
         langBtn: "FA",
         langAria: "فارسی",
+        themeBtnDay: "Day",
+        themeBtnNight: "Night",
+        themeAriaDay: "Day mode",
+        themeAriaNight: "Night mode",
       }
     };
 
     let lang = localStorage.getItem("ebarat-lang") === "en" ? "en" : "fa";
+    let theme = localStorage.getItem("ebarat-theme") === "light" ? "light" : "dark";
 
     function t(key, ...args) {
       const val = I18N[lang][key];
       return typeof val === "function" ? val(...args) : val;
+    }
+
+    function applyTheme() {
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("ebarat-theme", theme);
+      const btn = document.getElementById("theme-toggle");
+      const toLight = theme === "dark";
+      btn.textContent = toLight ? t("themeBtnDay") : t("themeBtnNight");
+      btn.setAttribute("aria-label", toLight ? t("themeAriaDay") : t("themeAriaNight"));
     }
 
     function applyLang() {
@@ -432,11 +494,16 @@
       if (chosenTemplate) {
         document.getElementById("template-name").textContent = t("templateLabel") + chosenTemplate.name;
       }
+      applyTheme();
     }
 
     document.getElementById("lang-toggle").addEventListener("click", () => {
       lang = lang === "fa" ? "en" : "fa";
       applyLang();
+    });
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+      theme = theme === "dark" ? "light" : "dark";
+      applyTheme();
     });
 
     const drop = document.getElementById("drop");
