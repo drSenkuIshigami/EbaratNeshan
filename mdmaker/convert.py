@@ -16,10 +16,17 @@ from .tables import detect_document_tables, rows_to_markdown, run_in_tables, tab
 
 
 class ConversionResult:
-    def __init__(self, markdown: str, maps: dict[str, FontGlyphMap], warnings: list[str]):
+    def __init__(
+        self,
+        markdown: str,
+        maps: dict[str, FontGlyphMap],
+        warnings: list[str],
+        meta: dict | None = None,
+    ):
         self.markdown = markdown
         self.maps = maps
         self.warnings = warnings
+        self.meta = meta or {}
 
     def save(self, path: str | Path) -> Path:
         out = Path(path)
@@ -241,8 +248,20 @@ def convert_docx(
         from docx.text.paragraph import Paragraph  # type: ignore
     except ImportError as exc:
         raise RuntimeError("python-docx is required for Word files") from exc
+
+    from .docx_rich import (
+        extract_docx_extras,
+        format_chrome_markdown,
+        format_notes_markdown,
+        is_bibliography_heading,
+        is_bibliography_style,
+        page_meta_for_yaml,
+        paragraph_to_markdown,
+    )
+
     src = Path(path)
     document = docx.Document(str(src))
+    extras = extract_docx_extras(document)
     parts: list[str] = []
     rtl = False
     saved_images: list[str] = []
@@ -250,6 +269,8 @@ def convert_docx(
     if assets is not None:
         assets.mkdir(parents=True, exist_ok=True)
     ol_n = 0
+    in_references = False
+    bibliography: list[str] = []
 
     def note_rtl(text: str) -> None:
         nonlocal rtl
@@ -281,14 +302,16 @@ def convert_docx(
         return int(ilvl.get(qn("w:val")))
 
     def emit_paragraph(para) -> None:
-        nonlocal ol_n
+        nonlocal ol_n, in_references
         raw = para.text.strip()
+        rich = paragraph_to_markdown(para)
         for rel in _save_docx_blips(para, document, assets, images_rel, saved_images):
             parts.append(f"![image]({rel})")
             parts.append("")
-        if not raw:
+        if not raw and not rich:
             return
-        note_rtl(raw)
+        display = rich or raw
+        note_rtl(display)
         style = (para.style.name or "") if para.style is not None else ""
         level = heading_level_from_style(style)
         if level is None:
@@ -297,12 +320,16 @@ def convert_docx(
             level = heading_level_from_text(raw)
         if level:
             ol_n = 0
+            in_references = is_bibliography_heading(raw)
             parts.append(atx(level, raw))
             parts.append("")
             return
+        if is_bibliography_style(style) or in_references:
+            bibliography.append(display)
+            # Still emit in-body so reading order is preserved; also collect for meta.
         ilvl = _num_ilvl(para)
         if ilvl is not None:
-            chunks = [c.strip() for c in raw.splitlines() if c.strip()]
+            chunks = [c.strip() for c in display.splitlines() if c.strip()]
             numbered = any(looks_numbered(c) for c in chunks)
             for chunk in chunks:
                 mapped = list_item(chunk)
@@ -319,10 +346,10 @@ def convert_docx(
             parts.append("")
             return
         if "List" in style:
-            parts.append(f"- {raw}")
+            parts.append(f"- {display}")
             parts.append("")
             return
-        parts.append(_runs_to_markdown(para) or raw)
+        parts.append(display)
         parts.append("")
 
     def emit_table(table) -> None:
@@ -343,34 +370,58 @@ def convert_docx(
         elif child.tag == qn("w:tbl"):
             emit_table(Table(child, document))
 
+    notes_md = format_notes_markdown(
+        extras.get("footnotes") or {},
+        extras.get("endnotes") or {},
+        rtl=rtl,
+    )
+    if notes_md:
+        parts.append(notes_md.rstrip())
+        parts.append("")
+
+    # Headers/footers as trailing archival section (LLM-friendly, optional for reading).
+    chrome_md = format_chrome_markdown(
+        extras.get("headers") or {},
+        extras.get("footers") or {},
+        rtl=rtl,
+    )
+    if chrome_md and purpose == "llm":
+        parts.append(chrome_md.rstrip())
+        parts.append("")
+
     markdown = "\n".join(parts).strip() + "\n"
     if rtl and purpose == "reading":
         markdown = f'<div dir="rtl">\n\n{markdown}\n</div>\n'
-    warnings = []
+
+    page = dict(extras.get("page") or {})
+    page["footnote_count"] = len(extras.get("footnotes") or {})
+    page["endnote_count"] = len(extras.get("endnotes") or {})
+    meta = {
+        "page": page_meta_for_yaml(page),
+        "headers": extras.get("headers") or {},
+        "footers": extras.get("footers") or {},
+        "footnotes": extras.get("footnotes") or {},
+        "endnotes": extras.get("endnotes") or {},
+        "bibliography": bibliography,
+        "rtl": rtl,
+    }
+
+    warnings: list[str] = []
     if saved_images:
         warnings.append(f"Saved {len(saved_images)} Word image(s)")
-    return ConversionResult(markdown, {}, warnings)
+    if meta["footnotes"]:
+        warnings.append(f"Extracted {len(meta['footnotes'])} footnote(s)")
+    if meta["endnotes"]:
+        warnings.append(f"Extracted {len(meta['endnotes'])} endnote(s)")
+    if bibliography:
+        warnings.append(f"Collected {len(bibliography)} bibliography/reference line(s)")
+    if meta["headers"] or meta["footers"]:
+        warnings.append("Captured header/footer text and page setup")
+    return ConversionResult(markdown, {}, warnings, meta=meta)
 
 
 _A_BLIP = "{http://schemas.openxmlformats.org/drawingml/2006/main}blip"
 _R_EMBED = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
-
-
-def _runs_to_markdown(para) -> str:
-    bits: list[str] = []
-    for run in para.runs:
-        text = (run.text or "").replace("\n", " ")
-        if not text:
-            continue
-        if run.bold and run.italic:
-            bits.append(f"***{text}***")
-        elif run.bold:
-            bits.append(f"**{text}**")
-        elif run.italic:
-            bits.append(f"*{text}*")
-        else:
-            bits.append(text)
-    return "".join(bits).strip()
 
 
 def _save_docx_blips(para, document, assets: Path | None, images_rel: str, saved: list[str]) -> list[str]:
@@ -454,12 +505,14 @@ def convert_both(
             "table_count": bundle.get("table_count", 0),
             "figure_names": bundle.get("figure_names", []),
             "table_names": bundle.get("table_names", []),
+            "meta": {},
         }
     if suffix == ".docx":
         texts: dict[str, str] = {}
         warnings: list[str] = []
         figure_names: list[str] = []
         first_dir: Path | None = None
+        last_meta: dict = {}
         for purpose in wanted:
             assets = Path(jobs[purpose]) if jobs and purpose in jobs else None
             if assets is not None:
@@ -473,6 +526,8 @@ def convert_both(
             )
             texts[purpose] = result.markdown
             warnings.extend(result.warnings)
+            if result.meta:
+                last_meta = result.meta
             if assets is not None and not figure_names:
                 figure_names = sorted(p.name for p in assets.glob("image-*"))
                 first_dir = assets
@@ -490,6 +545,7 @@ def convert_both(
             "table_count": 0,
             "figure_names": figure_names,
             "table_names": [],
+            "meta": last_meta,
         }
     if suffix == ".doc":
         raise RuntimeError(".doc (Word 97-2003) support is next; convert to .docx or PDF for now.")

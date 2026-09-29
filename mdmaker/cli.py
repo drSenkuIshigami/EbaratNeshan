@@ -60,6 +60,13 @@ def convert_one(src, cfg, purposes: tuple[str, ...] | None = None, *, quiet: boo
     for purpose, layout in layouts.items():
         md = bundle["texts"][purpose]
         title = cfg.get("title") or src.stem
+        extra = {}
+        meta = bundle.get("meta") or {}
+        page = meta.get("page") or {}
+        if page:
+            extra.update(page)
+        if meta.get("bibliography"):
+            extra["references"] = len(meta["bibliography"])
         md = yaml_header(
             title=title,
             source=src,
@@ -67,6 +74,7 @@ def convert_one(src, cfg, purposes: tuple[str, ...] | None = None, *, quiet: boo
             tables=int(bundle.get("table_count") or 0),
             figures=len(bundle.get("figure_names") or []),
             lang="fa" if has_persian(md) else "und",
+            extra=extra or None,
         ) + md
         if cfg.get("persian_digits"):
             md = to_persian_digits(md)

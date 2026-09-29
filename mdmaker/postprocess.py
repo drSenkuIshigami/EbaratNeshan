@@ -22,19 +22,46 @@ def yaml_header(
     tables: int = 0,
     figures: int = 0,
     lang: str | None = None,
+    extra: dict | None = None,
 ) -> str:
     lang = lang or "und"
     src = Path(source).name
-    return (
-        "---\n"
-        f"title: { _yaml_scalar(title) }\n"
-        f"source: { _yaml_scalar(src) }\n"
-        f"lang: {lang}\n"
-        f"purpose: {purpose}\n"
-        f"tables: {tables}\n"
-        f"figures: {figures}\n"
-        "---\n\n"
-    )
+    lines = [
+        "---",
+        f"title: { _yaml_scalar(title) }",
+        f"source: { _yaml_scalar(src) }",
+        f"lang: {lang}",
+        f"purpose: {purpose}",
+        f"tables: {tables}",
+        f"figures: {figures}",
+    ]
+    for key, value in (extra or {}).items():
+        if value is None or value == "" or value == {} or value == []:
+            continue
+        lines.append(f"{key}: {_yaml_value(value)}")
+    lines.append("---")
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
+def _yaml_value(value) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return str(value)
+    if isinstance(value, dict):
+        if not value:
+            return "{}"
+        # inline mapping for compact page meta
+        inner = ", ".join(f"{k}: {_yaml_value(v)}" for k, v in value.items())
+        return "{ " + inner + " }"
+    if isinstance(value, (list, tuple)):
+        if not value:
+            return "[]"
+        if all(isinstance(x, (str, int, float, bool)) for x in value):
+            return "[" + ", ".join(_yaml_value(x) for x in value) + "]"
+        return _yaml_scalar(str(value))
+    return _yaml_scalar(str(value))
 
 
 def _yaml_scalar(value: str) -> str:
